@@ -1,0 +1,6 @@
+2021-10-15
+
+idea: starting point of nodes randomly generating new blocks and broadcasting state across network.
+- new block generated every 10 seconds, awarded randomly among participants
+- network participant list locked 1 second before award
+- broadcast to network at each award, inconsistency crashes network
