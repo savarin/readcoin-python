@@ -8,3 +8,7 @@ idea: starting point of nodes randomly generating new blocks and broadcasting st
 v1.1: need a refresher on socket programming. simplify to sender and receiver.
 - sender runs a loop waiting for user input and sends bytes to the receiver.
 - receiver runs a loop waiting for message and prints bytes.
+
+v1.2: convert sender to HQ and receiver to node. HQ broadcasts to all nodes in network.
+- HQ runs a loop waiting for user input and sends bytes to all nodes.
+- receiver initialized with specific port, runs a loop waiting for message and prints bytes.
