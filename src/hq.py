@@ -20,15 +20,16 @@ NODE_PORTS = [7000, 8000, 9000]
 class HQ:
     """ """
 
+    port: int
     sock: socket.socket
 
 
-def init_hq() -> HQ:
+def init_hq(port: int) -> HQ:
     """ """
     assert HQ_IP is not None
     sock = helpers.bind_socket(HQ_IP, HQ_PORT)
 
-    return HQ(sock=sock)
+    return HQ(port=port, sock=sock)
 
 
 def listen(hq: HQ):
@@ -43,5 +44,5 @@ def listen(hq: HQ):
 
 
 if __name__ == "__main__":
-    hq = init_hq()
+    hq = init_hq(port=HQ_PORT)
     listen(hq)

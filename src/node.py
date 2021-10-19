@@ -1,10 +1,14 @@
-import os
+from typing import List
 import dataclasses
+import hashlib
+import os
 import socket
 import sys
+import time
 
 import dotenv
 
+import blocks
 import helpers
 
 
@@ -21,26 +25,57 @@ NODE_PORTS = [7000, 8000, 9000]
 class Node:
     """ """
 
+    port: int
     sock: socket.socket
 
 
-def init_node(port) -> Node:
+def init_node(port: int) -> Node:
     """ """
     assert NODE_IP is not None
     sock = helpers.bind_socket(NODE_IP, port)
 
-    return Node(sock=sock)
+    return Node(port=port, sock=sock)
 
 
 def listen(node: Node):
     """ """
+    blockchain: List[bytes] = []
+
+    prev_hash = (0).to_bytes(32, byteorder="big")
+    timestamp = int(time.time())
+    nonce = 0
+
     while True:
         try:
-            node.sock.settimeout(3)
+            node.sock.settimeout(1)
             message, _ = node.sock.recvfrom(1024)
             print(message)
+
         except socket.timeout:
-            print(".")
+            print(f"nonce: {nonce}")
+            while True:
+                block_header = blocks.init_block_header(prev_hash, timestamp, nonce)
+                guess = hashlib.sha256(hashlib.sha256(block_header).digest())
+
+                if guess.hexdigest()[:4] != "0000":
+                    nonce += 1
+
+                    if nonce % 1000 == 0:
+                        break
+
+                    continue
+
+                transaction_counter, transactions = blocks.init_transactions(node.port)
+                block = blocks.init_block(
+                    block_header, transaction_counter, transactions
+                )
+
+                print(f"block {len(blockchain)}: {guess.hexdigest()}")
+                blockchain.append(block)
+
+                prev_hash = guess.digest()
+                timestamp = int(time.time())
+                nonce = 0
 
 
 if __name__ == "__main__":
