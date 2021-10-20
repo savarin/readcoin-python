@@ -56,12 +56,12 @@ def init_genesis_block() -> Tuple[bytes, bytes]:
     return guess.digest(), block
 
 
-def solve_block_header(
+def run_proof_of_work(
     previous_hash: bytes,
     timestamp: int,
     nonce: int = 0,
     iterations: Optional[int] = None,
-) -> Tuple[bool, Optional[bytes], Optional[bytes]]:
+) -> Tuple[bool, int, Optional[bytes], Optional[bytes]]:
     """Find nonce that makes the first 4 bytes of twice-hashed header all zeroes. Maximum number of
     iterations can be specified."""
     counter = 0
@@ -74,9 +74,9 @@ def solve_block_header(
             break
 
         if iterations is not None and counter == iterations:
-            return False, None, None
+            return False, nonce, None, None
 
         nonce += 1
         counter += 1
 
-    return True, guess.digest(), block_header
+    return True, nonce, guess.digest(), block_header

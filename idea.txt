@@ -11,3 +11,12 @@ v1.1: need a refresher on socket programming. simplify to sender and receiver.
 v1.2: convert sender to HQ and receiver to node. HQ broadcasts to all nodes in network.
 - HQ runs a loop waiting for user input and sends bytes to all nodes.
 - receiver initialized with specific port, runs a loop waiting for message and prints bytes.
+
+
+- broadcast full chain to network on every successful new block
+- recipient will compare length of chain, if same then ignore, if longer then compare to own chain (1) if hash equal then go to next (2) if different then validate all onwards
+    - if chain length the same or shorter, ignore
+    - if chain longer, go block by block comparing
+        - if blocks have same hash, then go to next block
+        - if block have different hash, then check validity
+        - if at the end of block, then replace chain with new chain
