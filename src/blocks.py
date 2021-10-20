@@ -40,7 +40,7 @@ def init_block(
     )
 
 
-def init_genesis_block():
+def init_genesis_block() -> Tuple[bytes, bytes]:
     """ """
     previous_hash = (0).to_bytes(32, byteorder="big")
     timestamp = 1634700000
@@ -48,11 +48,12 @@ def init_genesis_block():
 
     block_header = init_block_header(previous_hash, timestamp, nonce)
     guess = hashlib.sha256(hashlib.sha256(block_header).digest())
+    assert guess.hexdigest()[:4] == "0000"
 
     transaction_counter, transactions = init_transactions(7000)
     block = init_block(block_header, transaction_counter, transactions)
 
-    return block_header, guess.digest(), block
+    return guess.digest(), block
 
 
 def solve_block_header(
@@ -78,4 +79,4 @@ def solve_block_header(
         nonce += 1
         counter += 1
 
-    return True, block_header, guess.digest()
+    return True, guess.digest(), block_header
