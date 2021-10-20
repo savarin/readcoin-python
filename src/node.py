@@ -20,7 +20,7 @@ NODE_IP = os.getenv("NODE_IP")
 NODE_PORTS = [7000, 8000, 9000]
 
 
-_, GENESIS_HASH, GENESIS_BLOCK = blocks.init_genesis_block()
+GENESIS_HASH, GENESIS_BLOCK = blocks.init_genesis_block()
 
 
 @dataclasses.dataclass
@@ -49,14 +49,14 @@ def listen(node: Node):
 
     while True:
         try:
-            node.sock.settimeout(1)
+            node.sock.settimeout(0.001)
             message, _ = node.sock.recvfrom(1024)
             print(message)
 
         except socket.timeout:
             print(f"nonce: {nonce}")
 
-            is_new_block, block_header, current_hash = blocks.solve_block_header(
+            is_new_block, current_hash, block_header = blocks.solve_block_header(
                 previous_hash, timestamp, nonce, 1000
             )
 
@@ -73,6 +73,12 @@ def listen(node: Node):
             )
             node.blockchain += block
             node.blockchain_length += 1
+
+            for node_port in NODE_PORTS:
+                if node_port == node.port:
+                    continue
+
+                node.sock.sendto(node.blockchain, (NODE_IP, node_port))
 
             previous_hash = current_hash
             timestamp = int(time.time())
