@@ -1,3 +1,7 @@
+from typing import Optional, Tuple
+import hashlib
+
+
 VERSION: int = 0
 
 
@@ -34,3 +38,25 @@ def init_block(
         + transaction_counter.to_bytes(1, byteorder="big")
         + transactions
     )
+
+
+def solve_block_header(
+    prev_hash: bytes, timestamp: int, nonce: int = 0, iterations: Optional[int] = None
+) -> Tuple[bool, Optional[bytes], Optional[bytes]]:
+    """ """
+    counter = 0
+
+    while True:
+        block_header = init_block_header(prev_hash, timestamp, nonce)
+        guess = hashlib.sha256(hashlib.sha256(block_header).digest())
+
+        if guess.hexdigest()[:4] == "0000":
+            break
+
+        if iterations is not None and counter == iterations:
+            return False, None, None
+
+        nonce += 1
+        counter += 1
+
+    return True, block_header, guess.digest()
