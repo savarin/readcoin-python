@@ -1,6 +1,6 @@
 from typing import List
+import binascii
 import dataclasses
-import hashlib
 import os
 import socket
 import sys
@@ -53,29 +53,25 @@ def listen(node: Node):
 
         except socket.timeout:
             print(f"nonce: {nonce}")
-            while True:
-                block_header = blocks.init_block_header(prev_hash, timestamp, nonce)
-                guess = hashlib.sha256(hashlib.sha256(block_header).digest())
 
-                if guess.hexdigest()[:4] != "0000":
-                    nonce += 1
+            is_new_block, block_header, current_hash = blocks.solve_block_header(
+                prev_hash, timestamp, nonce, 1000
+            )
 
-                    if nonce % 1000 == 0:
-                        break
+            if not is_new_block:
+                nonce += 1000
+                continue
 
-                    continue
+            assert block_header is not None and current_hash is not None
+            transaction_counter, transactions = blocks.init_transactions(node.port)
+            block = blocks.init_block(block_header, transaction_counter, transactions)
 
-                transaction_counter, transactions = blocks.init_transactions(node.port)
-                block = blocks.init_block(
-                    block_header, transaction_counter, transactions
-                )
+            print(f"block {len(blockchain)}: {binascii.hexlify(current_hash).decode()}")
+            blockchain.append(block)
 
-                print(f"block {len(blockchain)}: {guess.hexdigest()}")
-                blockchain.append(block)
-
-                prev_hash = guess.digest()
-                timestamp = int(time.time())
-                nonce = 0
+            prev_hash = current_hash
+            timestamp = int(time.time())
+            nonce = 0
 
 
 if __name__ == "__main__":
