@@ -1,4 +1,3 @@
-from typing import List
 import binascii
 import dataclasses
 import os
@@ -21,12 +20,17 @@ NODE_IP = os.getenv("NODE_IP")
 NODE_PORTS = [7000, 8000, 9000]
 
 
+_, GENESIS_HASH, GENESIS_BLOCK = blocks.init_genesis_block()
+
+
 @dataclasses.dataclass
 class Node:
     """ """
 
     port: int
     sock: socket.socket
+    blockchain: bytes
+    blockchain_length: int
 
 
 def init_node(port: int) -> Node:
@@ -34,14 +38,12 @@ def init_node(port: int) -> Node:
     assert NODE_IP is not None
     sock = helpers.bind_socket(NODE_IP, port)
 
-    return Node(port=port, sock=sock)
+    return Node(port=port, sock=sock, blockchain=GENESIS_BLOCK, blockchain_length=1)
 
 
 def listen(node: Node):
     """ """
-    blockchain: List[bytes] = []
-
-    prev_hash = (0).to_bytes(32, byteorder="big")
+    previous_hash = GENESIS_HASH
     timestamp = int(time.time())
     nonce = 0
 
@@ -55,7 +57,7 @@ def listen(node: Node):
             print(f"nonce: {nonce}")
 
             is_new_block, block_header, current_hash = blocks.solve_block_header(
-                prev_hash, timestamp, nonce, 1000
+                previous_hash, timestamp, nonce, 1000
             )
 
             if not is_new_block:
@@ -66,10 +68,13 @@ def listen(node: Node):
             transaction_counter, transactions = blocks.init_transactions(node.port)
             block = blocks.init_block(block_header, transaction_counter, transactions)
 
-            print(f"block {len(blockchain)}: {binascii.hexlify(current_hash).decode()}")
-            blockchain.append(block)
+            print(
+                f"block {node.blockchain_length}: {binascii.hexlify(current_hash).decode()}"
+            )
+            node.blockchain += block
+            node.blockchain_length += 1
 
-            prev_hash = current_hash
+            previous_hash = current_hash
             timestamp = int(time.time())
             nonce = 0
 
