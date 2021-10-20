@@ -49,37 +49,43 @@ def listen(node: Node):
 
     while True:
         try:
-            node.sock.settimeout(0.001)
+            # Listen for incoming messages.
+            node.sock.settimeout(1)
             message, _ = node.sock.recvfrom(1024)
             print(message)
 
         except socket.timeout:
+            # Run proof-of-work.
             print(f"nonce: {nonce}")
-
-            is_new_block, current_hash, block_header = blocks.solve_block_header(
+            is_new_block, _, current_hash, block_header = blocks.run_proof_of_work(
                 previous_hash, timestamp, nonce, 1000
             )
 
+            # Switch to listening mode if not solved after 1000 nonce values.
             if not is_new_block:
                 nonce += 1000
                 continue
 
-            assert block_header is not None and current_hash is not None
+            # Create transaction to award block if solved.
+            assert current_hash is not None and block_header is not None
             transaction_counter, transactions = blocks.init_transactions(node.port)
             block = blocks.init_block(block_header, transaction_counter, transactions)
 
-            print(
-                f"block {node.blockchain_length}: {binascii.hexlify(current_hash).decode()}"
-            )
             node.blockchain += block
             node.blockchain_length += 1
 
+            # Broadcast full blockchain to network.
             for node_port in NODE_PORTS:
                 if node_port == node.port:
                     continue
 
                 node.sock.sendto(node.blockchain, (NODE_IP, node_port))
 
+            print(
+                f"block {node.blockchain_length - 1}: {binascii.hexlify(current_hash).decode()}"
+            )
+
+            # Reset values for next block header.
             previous_hash = current_hash
             timestamp = int(time.time())
             nonce = 0
