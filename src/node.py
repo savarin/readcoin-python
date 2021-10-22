@@ -49,9 +49,10 @@ def listen(node: Node):
 
     while True:
         try:
-            # Listen for incoming messages.
+            # Listen for incoming messages, with maximum size set at OS X maximum UDP package size
+            # of 9216 bytes.
             node.sock.settimeout(1)
-            blockchain, _ = node.sock.recvfrom(65536)
+            blockchain, _ = node.sock.recvfrom(9216)
 
             # Check blockchain received is valid.
             is_new_block, blockchain_counter, current_hash = blocks.validate_blockchain(
