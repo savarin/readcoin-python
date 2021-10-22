@@ -82,10 +82,9 @@ def run_proof_of_work(
 
 
 def validate_blockchain(blockchain: bytes) -> Tuple[bool, int, Optional[bytes]]:
-    """ """
+    """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
     byte_index = 0
     blockchain_counter = 0
-
     blockchain_size = len(blockchain)
     previous_hash = (0).to_bytes(32, byteorder="big")
 
