@@ -1,8 +1,8 @@
 2021-10-15
 
 idea: starting point of nodes mining blocks and broadcasting new state across the network.
-- new block mined when block hash has leading zeroes
-- when new blockchain received, compare to length of current chain
+- new block mined when proof-of-work satisfied i.e. block hash has 4 leading zeroes
+- when new blockchain received, validate blockchain and compare to length of current chain
 
 v1.1: need a refresher on socket programming. simplify to sender and receiver.
 - sender runs a loop waiting for user input and sends bytes to the receiver.
@@ -10,13 +10,13 @@ v1.1: need a refresher on socket programming. simplify to sender and receiver.
 
 v1.2: convert sender to HQ and receiver to node. HQ broadcasts to all nodes in network.
 - HQ runs a loop waiting for user input and sends bytes to all nodes.
-- receiver initialized with specific port, runs a loop waiting for message and prints bytes.
+- node initialized with specific port, runs a loop waiting for message and prints bytes.
 
+v1.3: single node mining
+- node iterates through 1000 nonce values at a time, appends to blockchain when found and
+  broadcasts full chain to the network.
+- node listens for 1 second in between 1000 iterations.
 
-- broadcast full chain to network on every successful new block
-- recipient will compare length of chain, if same then ignore, if longer then compare to own chain (1) if hash equal then go to next (2) if different then validate all onwards
-    - if chain length the same or shorter, ignore
-    - if chain longer, go block by block comparing
-        - if blocks have same hash, then go to next block
-        - if block have different hash, then check validity
-        - if at the end of block, then replace chain with new chain
+v1.4: single node mining and validation
+- node validates blockchain received satisfy proof-of-work and indeed form a chain.
+- node replaces with current blockchain when valid and is longer.
