@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Generator, Optional, Tuple
 import hashlib
 
 
@@ -81,16 +81,29 @@ def run_proof_of_work(
     return True, nonce, guess.digest(), header
 
 
-def validate_blockchain(blockchain: bytes) -> Tuple[bool, int, Optional[bytes]]:
-    """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
-    byte_index = 0
+def iterate_blockchain(blockchain: bytes, byte_index: int = 0) -> Generator:
+    """ """
     blockchain_counter = 0
-    blockchain_size = len(blockchain)
-    previous_hash = (0).to_bytes(32, byteorder="big")
 
     while True:
         block_size = blockchain[byte_index]
-        header = blockchain[byte_index + 1 : byte_index + 1 + HEADER_SIZE]
+        block = blockchain[byte_index : byte_index + block_size]
+
+        byte_index += block_size
+        blockchain_counter += 1
+
+        yield block, blockchain_counter, byte_index
+
+
+def validate_blockchain(blockchain: bytes) -> Tuple[bool, int, Optional[bytes]]:
+    """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
+    previous_hash = (0).to_bytes(32, byteorder="big")
+    blockchain_size = len(blockchain)
+
+    for block, blockchain_counter, byte_index in iterate_blockchain(
+        blockchain, byte_index=0
+    ):
+        header = block[1 : 1 + HEADER_SIZE]
 
         if header[1:33] != previous_hash:
             return False, blockchain_counter, None
@@ -100,8 +113,6 @@ def validate_blockchain(blockchain: bytes) -> Tuple[bool, int, Optional[bytes]]:
         if guess.hexdigest()[:4] != "0000":
             return False, blockchain_counter, None
 
-        byte_index += block_size
-        blockchain_counter += 1
         previous_hash = guess.digest()
 
         if byte_index == blockchain_size:

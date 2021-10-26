@@ -94,5 +94,5 @@ def test_validate_blockchain():
     )
 
     assert not is_new_block
-    assert blockchain_counter == 1
+    assert blockchain_counter == 2
     assert current_hash is None
