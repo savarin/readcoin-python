@@ -59,7 +59,7 @@ def test_proof_of_work():
 def test_validate_blockchain():
     """ """
     _, blockchain = blocks.init_genesis_block()
-    is_new_block, blockchain_counter, current_hash = blocks.validate_blockchain(
+    is_new_block, blockchain_counter, current_hash, _ = blocks.validate_blockchain(
         blockchain
     )
 
@@ -76,8 +76,10 @@ def test_validate_blockchain():
 
     _, _, _, header = blocks.run_proof_of_work(previous_hash, timestamp, 58000, 1000)
     block = blocks.init_block(header, transaction_counter, transactions)
-    is_new_block, blockchain_counter, current_hash = blocks.validate_blockchain(
-        blockchain + block
+    blockchain += block
+
+    is_new_block, blockchain_counter, current_hash, block = blocks.validate_blockchain(
+        blockchain
     )
 
     assert is_new_block
@@ -89,10 +91,10 @@ def test_validate_blockchain():
 
     header = (0).to_bytes(32, byteorder="big")
     block = blocks.init_block(header, transaction_counter, transactions)
-    is_new_block, blockchain_counter, current_hash = blocks.validate_blockchain(
+    is_new_block, blockchain_counter, current_hash, _ = blocks.validate_blockchain(
         blockchain + block
     )
 
     assert not is_new_block
-    assert blockchain_counter == 2
+    assert blockchain_counter == 3
     assert current_hash is None
