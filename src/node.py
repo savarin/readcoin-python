@@ -30,7 +30,7 @@ class Node:
     port: int
     sock: socket.socket
     blockchain: bytes
-    blockchain_counter: int
+    block_counter: int
 
 
 def init_node(port: int) -> Node:
@@ -38,7 +38,7 @@ def init_node(port: int) -> Node:
     assert NODE_IP is not None
     sock = helpers.bind_socket(NODE_IP, port)
 
-    return Node(port=port, sock=sock, blockchain=GENESIS_BLOCK, blockchain_counter=1)
+    return Node(port=port, sock=sock, blockchain=GENESIS_BLOCK, block_counter=1)
 
 
 def listen(node: Node):
@@ -55,26 +55,26 @@ def listen(node: Node):
             blockchain, _ = node.sock.recvfrom(9216)
 
             # Check blockchain received is valid.
-            is_new_block, blockchain_counter, current_hash = blocks.validate_blockchain(
+            is_new_block, block_counter, current_hash, _ = blocks.validate_blockchain(
                 blockchain
             )
 
             # Skip if invalid or not longer than existing blockchain.
-            if not is_new_block or blockchain_counter <= node.blockchain_counter:
+            if not is_new_block or block_counter <= node.block_counter:
                 print("IGNORE blockchain...")
                 continue
 
             # Replace if valid and longer than existing.
             node.blockchain = blockchain
-            node.blockchain_counter = blockchain_counter
+            node.block_counter = block_counter
 
             assert current_hash is not None
             print(
-                f"COPY block {node.blockchain_counter - 1}: {binascii.hexlify(current_hash).decode()}!"
+                f"COPY block {node.block_counter - 1}: {binascii.hexlify(current_hash).decode()}!"
             )
 
             # Force sleep to randomize timestamp.
-            sleep_time = (node.port + blockchain_counter) % 3 + 1
+            sleep_time = (node.port + block_counter) % 3 + 1
             print(f"SLEEP for {sleep_time} seconds...")
             time.sleep(sleep_time)
 
@@ -96,7 +96,7 @@ def listen(node: Node):
             block = blocks.init_block(header, transaction_counter, transactions)
 
             node.blockchain += block
-            node.blockchain_counter += 1
+            node.block_counter += 1
 
             # Broadcast full blockchain to network.
             for node_port in NODE_PORTS:
@@ -106,7 +106,7 @@ def listen(node: Node):
                 node.sock.sendto(node.blockchain, (NODE_IP, node_port))
 
             print(
-                f"CREATE block {node.blockchain_counter - 1}: {binascii.hexlify(current_hash).decode()}!"
+                f"CREATE block {node.block_counter - 1}: {binascii.hexlify(current_hash).decode()}!"
             )
 
         # Reset values for next block header.

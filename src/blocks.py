@@ -3,7 +3,12 @@ import hashlib
 
 
 VERSION: int = 0
+
 HEADER_SIZE: int = 69
+HASH_SIZE: int = 32
+
+REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
+REWARD_SENDER: bytes = (0).to_bytes(2, byteorder="big")
 
 
 def init_header(previous_hash: bytes, timestamp: int, nonce: int) -> bytes:
@@ -18,11 +23,8 @@ def init_header(previous_hash: bytes, timestamp: int, nonce: int) -> bytes:
 
 def init_transactions(node_port: int):
     """ """
-    sender = (0).to_bytes(2, byteorder="big")
-    receiver = node_port.to_bytes(2, byteorder="big")
-
     transaction_counter = 1
-    transactions = sender + receiver
+    transactions = REWARD_HASH + REWARD_SENDER + node_port.to_bytes(2, byteorder="big")
 
     return transaction_counter, transactions
 
@@ -41,7 +43,7 @@ def init_block(header: bytes, transaction_counter: int, transactions: bytes) -> 
 
 def init_genesis_block() -> Tuple[bytes, bytes]:
     """ """
-    previous_hash = (0).to_bytes(32, byteorder="big")
+    previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
     timestamp = 1634700000
     nonce = 70822
 
@@ -83,39 +85,128 @@ def run_proof_of_work(
 
 def iterate_blockchain(blockchain: bytes, byte_index: int = 0) -> Generator:
     """ """
-    blockchain_counter = 0
+    block_counter = 0
 
     while True:
         block_size = blockchain[byte_index]
         block = blockchain[byte_index : byte_index + block_size]
 
         byte_index += block_size
-        blockchain_counter += 1
+        block_counter += 1
 
-        yield block, blockchain_counter, byte_index
+        yield block, block_counter, byte_index
 
 
-def validate_blockchain(blockchain: bytes) -> Tuple[bool, int, Optional[bytes]]:
+def validate_blockchain(
+    blockchain: bytes,
+) -> Tuple[bool, int, Optional[bytes], Optional[bytes]]:
     """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
-    previous_hash = (0).to_bytes(32, byteorder="big")
+    previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
     blockchain_size = len(blockchain)
 
-    for block, blockchain_counter, byte_index in iterate_blockchain(
+    for block, block_counter, byte_index in iterate_blockchain(
         blockchain, byte_index=0
     ):
         header = block[1 : 1 + HEADER_SIZE]
 
         if header[1:33] != previous_hash:
-            return False, blockchain_counter, None
+            return False, block_counter, None, None
 
         guess = hashlib.sha256(hashlib.sha256(header).digest())
 
         if guess.hexdigest()[:4] != "0000":
-            return False, blockchain_counter, None
+            return False, block_counter, None, None
 
         previous_hash = guess.digest()
 
         if byte_index == blockchain_size:
             break
 
-    return True, blockchain_counter, previous_hash
+    return True, block_counter, previous_hash, block
+
+
+def iterate_transactions(transactions: bytes, transaction_counter: int) -> Generator:
+    """ """
+    transaction_size = HEADER_SIZE + 4 + 4
+
+    for i in range(transaction_counter):
+        yield transactions[i * transaction_size : (i + 1) * transaction_size], i
+
+
+def validate_transactions(blockchain: bytes, block: bytes) -> bool:
+    """ """
+    transaction_counter = int.from_bytes(
+        block[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+    )
+    transactions = block[1 + HEADER_SIZE + 1 :]
+
+    for transaction, transaction_number in iterate_transactions(
+        transactions, transaction_counter
+    ):
+        reference_hash = transaction[:HASH_SIZE]
+        sender = transaction[HASH_SIZE : HASH_SIZE + 2]
+
+        if transaction_number == 0:
+            if not (reference_hash != REWARD_HASH and sender != REWARD_SENDER):
+                return False
+
+            continue
+
+        if not validate_transaction(blockchain, reference_hash, sender):
+            return False
+
+    return True
+
+
+def validate_transaction(
+    blockchain: bytes, reference_hash: bytes, sender: bytes
+) -> bool:
+    """ """
+    is_valid_reference = False
+
+    for block, _, byte_index in iterate_blockchain(blockchain, byte_index=0):
+        header = block[1 : 1 + HEADER_SIZE]
+        guess = hashlib.sha256(hashlib.sha256(header).digest())
+
+        if guess == reference_hash:
+            is_valid_reference = True
+            break
+
+    if not is_valid_reference:
+        return False
+
+    transaction_counter = int.from_bytes(
+        block[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+    )
+    transactions = block[1 + HEADER_SIZE + 1 :]
+    is_valid_input = False
+
+    for transaction, _ in iterate_transactions(transactions, transaction_counter):
+        receiver = transaction[HASH_SIZE + 2 : HASH_SIZE + 4]
+
+        if receiver == sender:
+            is_valid_input = True
+            break
+
+    if not is_valid_input:
+        return False
+
+    for block, _, _ in iterate_blockchain(blockchain, byte_index=byte_index):
+        transaction_counter = int.from_bytes(
+            block[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+        )
+        transactions = block[1 + HEADER_SIZE + 1 :]
+
+        for transaction, transaction_number in iterate_transactions(
+            transactions, transaction_counter
+        ):
+            if transaction_number == 0:
+                continue
+
+            current_reference_hash = transaction[:HASH_SIZE]
+            current_sender = transaction[HASH_SIZE : HASH_SIZE + 2]
+
+            if current_reference_hash == reference_hash and current_sender == sender:
+                return False
+
+    return True
