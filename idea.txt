@@ -1,3 +1,11 @@
+
+TO-DO
+- transactions
+- signing
+- Merkle tree
+
+
+
 2021-10-15
 
 idea: starting point of nodes mining blocks and broadcasting new state across the network.
@@ -12,11 +20,19 @@ v1.2: convert sender to HQ and receiver to node. HQ broadcasts to all nodes in n
 - HQ runs a loop waiting for user input and sends bytes to all nodes.
 - node initialized with specific port, runs a loop waiting for message and prints bytes.
 
-v1.3: single node mining
+v1.3: single node mining.
 - node iterates through 1000 nonce values at a time, appends to blockchain when found and
   broadcasts full chain to the network.
 - node listens for 1 second in between 1000 iterations.
 
-v1.4: single node mining and validation
+v1.4: single node mining and validation.
 - node validates blockchain received satisfy proof-of-work and indeed form a chain.
 - node replaces with current blockchain when valid and is longer.
+
+
+
+2021-10-25
+
+idea: implement transactions by declaring hash address where token received, sender and receiver.
+- determination of blockchain or message by size
+- transactions stored in a buffer while mining
