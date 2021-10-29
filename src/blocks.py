@@ -127,49 +127,29 @@ def validate_blockchain(
 
 def iterate_transactions(transactions: bytes, transaction_counter: int) -> Generator:
     """ """
-    transaction_size = HEADER_SIZE + 4 + 4
+    transaction_size = HASH_SIZE + 2 + 2
 
     for i in range(transaction_counter):
         yield transactions[i * transaction_size : (i + 1) * transaction_size], i
-
-
-def validate_transactions(blockchain: bytes, block: bytes) -> bool:
-    """ """
-    transaction_counter = int.from_bytes(
-        block[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
-    )
-    transactions = block[1 + HEADER_SIZE + 1 :]
-
-    for transaction, transaction_number in iterate_transactions(
-        transactions, transaction_counter
-    ):
-        reference_hash = transaction[:HASH_SIZE]
-        sender = transaction[HASH_SIZE : HASH_SIZE + 2]
-
-        if transaction_number == 0:
-            if not (reference_hash != REWARD_HASH and sender != REWARD_SENDER):
-                return False
-
-            continue
-
-        if not validate_transaction(blockchain, reference_hash, sender):
-            return False
-
-    return True
 
 
 def validate_transaction(
     blockchain: bytes, reference_hash: bytes, sender: bytes
 ) -> bool:
     """ """
+    blockchain_size = len(blockchain)
+
     is_valid_reference = False
 
     for block, _, byte_index in iterate_blockchain(blockchain, byte_index=0):
         header = block[1 : 1 + HEADER_SIZE]
         guess = hashlib.sha256(hashlib.sha256(header).digest())
 
-        if guess == reference_hash:
+        if guess.digest() == reference_hash:
             is_valid_reference = True
+            break
+
+        if byte_index == blockchain_size:
             break
 
     if not is_valid_reference:
@@ -191,7 +171,9 @@ def validate_transaction(
     if not is_valid_input:
         return False
 
-    for block, _, _ in iterate_blockchain(blockchain, byte_index=byte_index):
+    current_transaction_counter = 0
+
+    for block, _, byte_index in iterate_blockchain(blockchain, byte_index=byte_index):
         transaction_counter = int.from_bytes(
             block[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
         )
@@ -207,6 +189,31 @@ def validate_transaction(
             current_sender = transaction[HASH_SIZE : HASH_SIZE + 2]
 
             if current_reference_hash == reference_hash and current_sender == sender:
+                current_transaction_counter += 1
+
+        if byte_index == blockchain_size:
+            break
+
+    return current_transaction_counter == 1
+
+
+def validate_transactions(
+    blockchain: bytes, transactions: bytes, transaction_counter: int
+) -> bool:
+    """ """
+    for transaction, transaction_number in iterate_transactions(
+        transactions, transaction_counter
+    ):
+        reference_hash = transaction[:HASH_SIZE]
+        sender = transaction[HASH_SIZE : HASH_SIZE + 2]
+
+        if transaction_number == 0:
+            if not (reference_hash == REWARD_HASH and sender == REWARD_SENDER):
                 return False
+
+            continue
+
+        if not validate_transaction(blockchain, reference_hash, sender):
+            return False
 
     return True
