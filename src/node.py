@@ -1,4 +1,3 @@
-import binascii
 import dataclasses
 import hashlib
 import os
@@ -76,11 +75,7 @@ def listen(node: Node):
             node.blockchain = blockchain
             block_hash = blockchain.chain[-1]
 
-            print(
-                "COPY block {}: {!r}!".format(
-                    blockchain_counter - 1, binascii.hexlify(block_hash)
-                )
-            )
+            print(f"COPY block {blockchain_counter - 1}: {bytes.hex(block_hash)}!")
 
             # Force sleep to randomize timestamp.
             sleep_time = (node.port + blockchain_counter) % 3 + 1
@@ -122,9 +117,7 @@ def listen(node: Node):
                 node.sock.sendto(node.blockchain.encode(), (NODE_IP, node_port))
 
             print(
-                "CREATE block {}: {!r}!".format(
-                    len(node.blockchain.chain) - 1, binascii.hexlify(block_hash)
-                )
+                f"CREATE block {len(node.blockchain.chain) - 1}: {bytes.hex(block_hash)}!"
             )
 
         # Reset values for next block header.
