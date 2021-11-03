@@ -1,4 +1,3 @@
-import binascii
 import hashlib
 
 import blocks
@@ -25,12 +24,12 @@ def test_proof_of_work():
     assert is_new_block
     assert nonce == 70822
     assert (
-        binascii.hexlify(block_hash)
-        == b"00001ff58495c3dc2a1aaa69ebca4e9b3e05e63e5a319fb73bcdccbcdbba1e72"
+        bytes.hex(block_hash)
+        == "00001ff58495c3dc2a1aaa69ebca4e9b3e05e63e5a319fb73bcdccbcdbba1e72"
     )
     assert (
-        binascii.hexlify(header.encode())
-        == b"000000000000000000000000000000000000000000000000000000000000000000616f8ae000000000000000000000000000000000000000000000000000000000000114a6"
+        bytes.hex(header.encode())
+        == "000000000000000000000000000000000000000000000000000000000000000000616f8ae000000000000000000000000000000000000000000000000000000000000114a6"
     )
 
     previous_hash = block_hash
@@ -52,12 +51,12 @@ def test_proof_of_work():
     assert is_new_block
     assert nonce == 58768
     assert (
-        binascii.hexlify(block_hash)
-        == b"000071e6ff5b358e57339b42d45b20acc0f112c218fa435b3ffa8f239b777347"
+        bytes.hex(block_hash)
+        == "000071e6ff5b358e57339b42d45b20acc0f112c218fa435b3ffa8f239b777347"
     )
     assert (
-        binascii.hexlify(header.encode())
-        == b"0000001ff58495c3dc2a1aaa69ebca4e9b3e05e63e5a319fb73bcdccbcdbba1e72616f8d38000000000000000000000000000000000000000000000000000000000000e590"
+        bytes.hex(header.encode())
+        == "0000001ff58495c3dc2a1aaa69ebca4e9b3e05e63e5a319fb73bcdccbcdbba1e72616f8d38000000000000000000000000000000000000000000000000000000000000e590"
     )
 
 
