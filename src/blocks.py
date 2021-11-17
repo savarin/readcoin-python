@@ -85,7 +85,7 @@ def run_proof_of_work(
 
 
 def iterate_blockchain(blockchain: bytes, byte_index: int = 0) -> Generator:
-    """ """
+    """Helper function to simplify iterating through blocks in the blockchain."""
     blockchain_counter = 0
 
     while True:

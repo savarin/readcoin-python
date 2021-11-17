@@ -98,11 +98,12 @@ def run(node: Node):
                 nonce += 1000
                 continue
 
-            # Create transaction to award block if solved.
+            # Create block reward if solved.
             assert current_hash is not None and header is not None
             transaction_counter, transactions = blocks.init_transactions(node.port)
             block = blocks.init_block(header, transaction_counter, transactions)
 
+            # Append new block to blockchain.
             node.blockchain += block
             node.block_counter += 1
 
