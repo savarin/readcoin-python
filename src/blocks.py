@@ -2,11 +2,14 @@ from typing import Generator, Optional, Tuple
 import hashlib
 
 
+Hash = bytes
+
+
 VERSION: int = 0
 HEADER_SIZE: int = 69
 
 
-def init_header(previous_hash: bytes, timestamp: int, nonce: int) -> bytes:
+def init_header(previous_hash: Hash, timestamp: int, nonce: int) -> bytes:
     """ """
     return (
         VERSION.to_bytes(1, byteorder="big")
@@ -39,7 +42,7 @@ def init_block(header: bytes, transaction_counter: int, transactions: bytes) -> 
     )
 
 
-def init_genesis_block() -> Tuple[bytes, bytes]:
+def init_genesis_block() -> Tuple[Hash, bytes]:
     """ """
     previous_hash = (0).to_bytes(32, byteorder="big")
     timestamp = 1634700000
@@ -56,7 +59,7 @@ def init_genesis_block() -> Tuple[bytes, bytes]:
 
 
 def run_proof_of_work(
-    previous_hash: bytes,
+    previous_hash: Hash,
     timestamp: int,
     nonce: int = 0,
     iterations: Optional[int] = None,
