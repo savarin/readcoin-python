@@ -13,9 +13,6 @@ import helpers
 
 dotenv.load_dotenv()
 
-HQ_IP = os.getenv("HQ_IP")
-HQ_PORT = 6000
-
 NODE_IP = os.getenv("NODE_IP")
 NODE_PORTS = [7000, 8000, 9000]
 
@@ -47,7 +44,16 @@ def init_node(port: int) -> Node:
     return Node(port=port, sock=sock, blockchain=blockchain)
 
 
-def listen(node: Node):
+def broadcast(node: Node, message: bytes):
+    """ """
+    for node_port in NODE_PORTS:
+        if node_port == node.port:
+            continue
+
+        node.sock.sendto(message, (NODE_IP, node_port))
+
+
+def run(node: Node):
     """ """
     previous_hash = node.blockchain.chain[0]
     timestamp = int(time.time())
@@ -57,7 +63,7 @@ def listen(node: Node):
         try:
             # Listen for incoming messages, with maximum size set at OS X maximum UDP package size
             # of 9216 bytes.
-            node.sock.settimeout(0.1)
+            node.sock.settimeout(1)
             message, _ = node.sock.recvfrom(9216)
 
             # Decode message and check blockchain is valid.
@@ -106,16 +112,12 @@ def listen(node: Node):
             )
             block = blocks.Block(header=header, transactions=[reward])
 
+            # Append new block to blockchain.
             node.blockchain.chain.append(block_hash)
             node.blockchain.blocks[block_hash] = block
 
             # Broadcast full blockchain to network.
-            for node_port in NODE_PORTS:
-                if node_port == node.port:
-                    continue
-
-                node.sock.sendto(node.blockchain.encode(), (NODE_IP, node_port))
-
+            broadcast(node, node.blockchain.encode())
             print(
                 f"CREATE block {len(node.blockchain.chain) - 1}: {bytes.hex(block_hash)}!"
             )
@@ -131,4 +133,4 @@ if __name__ == "__main__":
     assert port in NODE_PORTS
 
     node = init_node(port)
-    listen(node)
+    run(node)

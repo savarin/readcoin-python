@@ -115,7 +115,7 @@ def init_genesis_block() -> Block:
 
 
 def run_proof_of_work(
-    previous_hash: bytes,
+    previous_hash: Hash,
     timestamp: int,
     nonce: int = 0,
     iterations: Optional[int] = None,
@@ -166,7 +166,7 @@ def validate_blockchain(blockchain: Blockchain) -> bool:
 
 
 def validate_transaction(
-    blockchain: Blockchain, reference_hash: bytes, sender: int
+    blockchain: Blockchain, reference_hash: Hash, sender: int
 ) -> bool:
     """ """
     if reference_hash not in blockchain.blocks:
