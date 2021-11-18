@@ -10,9 +10,9 @@ simplicity, difficulty is set at a constant and each token is indivisible.
 
 We implement the Bitcoin protocol through multiple iterations:
 
-* [v1](https://github.com/savarin/readcoin/tree/a9d7500129335e062dc84c47975dfded0916e0a9/src) -
+* [v1](https://github.com/savarin/readcoin/tree/v1) -
 mining and blockchain validation only, each block as a bytestring.
-* [v2](https://github.com/savarin/readcoin/tree/69f059ada1818c38fa3cd82fc3875e4fed119092/src) -
+* [v2](https://github.com/savarin/readcoin/tree/main) -
 include transaction validation, each block as a class with encode/decode semantics.
 
 The term readcoin refers to a blog by the author on readcoin.com (no longer operational). The first
