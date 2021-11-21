@@ -191,37 +191,6 @@ def replace_blockchain(
     return validate_blockchain(remaining_blockchain, common_hash)
 
 
-def validate_transaction(
-    blockchain: Blockchain, reference_hash: Hash, sender: int
-) -> bool:
-    """ """
-    if reference_hash not in blockchain.blocks:
-        return False
-
-    block = blockchain.blocks[reference_hash]
-    is_valid_receive = False
-
-    for transaction in block.transactions:
-        if transaction.receiver == sender:
-            is_valid_receive = True
-            break
-
-    if not is_valid_receive:
-        return False
-
-    block_index = blockchain.chain.index(reference_hash)
-
-    for block_hash in blockchain.chain[block_index + 1 :]:
-        for transaction in blockchain.blocks[block_hash].transactions:
-            if (
-                transaction.reference_hash == reference_hash
-                and transaction.sender == sender
-            ):
-                return False
-
-    return True
-
-
 def iterate_message(message: bytes) -> Generator:
     """ """
     message_size = len(message)
