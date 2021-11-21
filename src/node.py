@@ -63,22 +63,19 @@ def run(node: Node):
         try:
             # Listen for incoming messages, with maximum size set at OS X maximum UDP package size
             # of 9216 bytes.
-            node.sock.settimeout(1)
+            node.sock.settimeout(0.1)
             message, _ = node.sock.recvfrom(9216)
 
             # Decode message and check blockchain is valid.
             blockchain = blocks.decode_message(message)
-            is_valid = blocks.validate_blockchain(blockchain)
 
-            # Skip if invalid or not longer than existing blockchain.
-            blockchain_counter = len(blockchain.chain)
-
-            if not is_valid or blockchain_counter <= len(node.blockchain.chain):
+            if not blocks.replace_blockchain(node.blockchain, blockchain):
                 print("IGNORE blockchain...")
                 continue
 
             # Replace if valid and longer than existing.
             node.blockchain = blockchain
+            blockchain_counter = len(blockchain.chain)
             block_hash = blockchain.chain[-1]
 
             print(f"COPY block {blockchain_counter - 1}: {bytes.hex(block_hash)}!")
