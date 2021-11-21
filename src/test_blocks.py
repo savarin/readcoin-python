@@ -1,6 +1,49 @@
 import hashlib
 
+import pytest
+
 import blocks
+
+
+@pytest.fixture
+def reward() -> blocks.Transaction:
+    """ """
+    return blocks.Transaction(
+        reference_hash=blocks.REWARD_HASH, sender=blocks.REWARD_SENDER, receiver=7000
+    )
+
+
+@pytest.fixture
+def blockchain_with_1_block() -> blocks.Blockchain:
+    """ """
+    block = blocks.init_genesis_block()
+    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
+
+    return blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+
+
+@pytest.fixture
+def blockchain_with_2_blocks(reward) -> blocks.Blockchain:
+    """ """
+    block = blocks.init_genesis_block()
+    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
+
+    blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+
+    header = blocks.Header(
+        version=blocks.VERSION,
+        previous_hash=block_hash,
+        timestamp=1634700600,
+        nonce=58768,
+    )
+
+    block = blocks.Block(header=header, transactions=[reward])
+    block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
+    blockchain.chain.append(block_hash)
+    blockchain.blocks[block_hash] = block
+
+    return blockchain
 
 
 def test_proof_of_work():
@@ -60,70 +103,56 @@ def test_proof_of_work():
     )
 
 
-def test_validate_blockchain():
+def test_validate_blockchain(reward, blockchain_with_1_block, blockchain_with_2_blocks):
     """ """
-    block = blocks.init_genesis_block()
-    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
-    blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
-
+    blockchain = blockchain_with_1_block
     assert blocks.validate_blockchain(blockchain)
 
-    reward = blocks.Transaction(
-        reference_hash=blocks.REWARD_HASH, sender=blocks.REWARD_SENDER, receiver=7000
-    )
-
-    header = blocks.Header(
-        version=blocks.VERSION,
-        previous_hash=block_hash,
-        timestamp=1634700600,
-        nonce=58768,
-    )
-    block = blocks.Block(header=header, transactions=[reward])
-
-    block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
-    blockchain.chain.append(block_hash)
-    blockchain.blocks[block_hash] = block
-
+    blockchain = blockchain_with_2_blocks
     assert blocks.validate_blockchain(blockchain)
 
     _, _, _, header = blocks.run_proof_of_work(
         (0).to_bytes(32, byteorder="big"), 1634701200, 95000, 1000
     )
-    block = blocks.Block(header=header, transactions=[reward])
 
+    block = blocks.Block(header=header, transactions=[reward])
     block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
     blockchain.chain.append(block_hash)
     blockchain.blocks[block_hash] = block
 
     assert not blocks.validate_blockchain(blockchain)
 
 
-def test_validate_transactions():
+def test_replace_blockchain(blockchain_with_1_block, blockchain_with_2_blocks):
     """ """
-    block = blocks.init_genesis_block()
-    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
-    blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+    assert blocks.replace_blockchain(blockchain_with_1_block, blockchain_with_2_blocks)
+    assert not blocks.replace_blockchain(
+        blockchain_with_1_block, blockchain_with_1_block
+    )
 
+
+def test_validate_transactions(reward, blockchain_with_1_block):
+    """ """
+    blockchain = blockchain_with_1_block
+    block_hash = blockchain.chain[-1]
     reference_hash = block_hash
 
     assert blocks.validate_transaction(blockchain, reference_hash, 7000)
 
-    reward = blocks.Transaction(
-        reference_hash=blocks.REWARD_HASH, sender=blocks.REWARD_SENDER, receiver=7000
-    )
     transaction = blocks.Transaction(
         reference_hash=block_hash, sender=7000, receiver=8000
     )
-
     header = blocks.Header(
         version=blocks.VERSION,
         previous_hash=block_hash,
         timestamp=1634700600,
         nonce=58768,
     )
-    block = blocks.Block(header=header, transactions=[reward, transaction])
 
+    block = blocks.Block(header=header, transactions=[reward, transaction])
     block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
     blockchain.chain.append(block_hash)
     blockchain.blocks[block_hash] = block
 
