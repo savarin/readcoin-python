@@ -132,33 +132,6 @@ def test_replace_blockchain(blockchain_with_1_block, blockchain_with_2_blocks):
     )
 
 
-def test_validate_transactions(reward, blockchain_with_1_block):
-    """ """
-    blockchain = blockchain_with_1_block
-    block_hash = blockchain.chain[-1]
-    reference_hash = block_hash
-
-    assert blocks.validate_transaction(blockchain, reference_hash, 7000)
-
-    transaction = blocks.Transaction(
-        reference_hash=block_hash, sender=7000, receiver=8000
-    )
-    header = blocks.Header(
-        version=blocks.VERSION,
-        previous_hash=block_hash,
-        timestamp=1634700600,
-        nonce=58768,
-    )
-
-    block = blocks.Block(header=header, transactions=[reward, transaction])
-    block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
-
-    blockchain.chain.append(block_hash)
-    blockchain.blocks[block_hash] = block
-
-    assert not blocks.validate_transaction(blockchain, reference_hash, 7000)
-
-
 def test_decode_message():
     """ """
     block = blocks.init_genesis_block()
