@@ -145,9 +145,12 @@ def run_proof_of_work(
     return True, nonce, guess.digest(), header
 
 
-def validate_blockchain(blockchain: Blockchain) -> bool:
+def validate_blockchain(
+    blockchain: Blockchain, previous_hash: Optional[Hash] = None
+) -> bool:
     """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
-    previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
+    if previous_hash is None:
+        previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
 
     for block_hash in blockchain.chain:
         header = blockchain.blocks[block_hash].header
@@ -163,6 +166,29 @@ def validate_blockchain(blockchain: Blockchain) -> bool:
         previous_hash = guess.digest()
 
     return True
+
+
+def replace_blockchain(
+    current_blockchain: Blockchain, potential_blockchain: Blockchain
+):
+    """Compare blockchains and replace if potential blockchain is longer and valid."""
+    if len(potential_blockchain.chain) < len(current_blockchain.chain):
+        return False
+
+    for i, block_hash in enumerate(potential_blockchain.chain):
+        if not (
+            i < len(current_blockchain.chain)
+            and block_hash == current_blockchain.chain[i]
+        ):
+            break
+
+        common_hash = block_hash
+
+    remaining_blockchain = Blockchain(
+        chain=potential_blockchain.chain[i:], blocks=potential_blockchain.blocks
+    )
+
+    return validate_blockchain(remaining_blockchain, common_hash)
 
 
 def validate_transaction(
