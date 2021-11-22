@@ -2,6 +2,8 @@ from typing import Dict, Generator, List, Optional, Tuple
 import dataclasses
 import hashlib
 
+import tree
+
 
 Hash = bytes
 
@@ -104,7 +106,11 @@ class Blockchain:
 def init_genesis_block() -> Block:
     """ """
     reward = Transaction(reference_hash=REWARD_HASH, sender=0, receiver=7000)
-    merkle_root = hashlib.sha256(reward.encode()).digest()
+    transaction_hash = hashlib.sha256(reward.encode()).digest()
+    merkle_tree = tree.init_merkle_tree([transaction_hash])
+
+    assert merkle_tree is not None
+    merkle_root = merkle_tree.tree_hash
 
     previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
     header = Header(

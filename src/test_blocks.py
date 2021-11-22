@@ -3,6 +3,7 @@ import hashlib
 import pytest
 
 import blocks
+import tree
 
 
 @pytest.fixture
@@ -11,6 +12,16 @@ def reward() -> blocks.Transaction:
     return blocks.Transaction(
         reference_hash=blocks.REWARD_HASH, sender=blocks.REWARD_SENDER, receiver=7000
     )
+
+
+@pytest.fixture
+def merkle_root(reward) -> blocks.Hash:
+    """ """
+    transaction_hash = hashlib.sha256(reward.encode()).digest()
+    merkle_tree = tree.init_merkle_tree([transaction_hash])
+
+    assert merkle_tree is not None
+    return merkle_tree.tree_hash
 
 
 @pytest.fixture
@@ -23,14 +34,12 @@ def blockchain_with_1_block() -> blocks.Blockchain:
 
 
 @pytest.fixture
-def blockchain_with_2_blocks(reward) -> blocks.Blockchain:
+def blockchain_with_2_blocks(reward, merkle_root) -> blocks.Blockchain:
     """ """
     block = blocks.init_genesis_block()
     block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
 
     blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
-
-    merkle_root = hashlib.sha256(reward.encode()).digest()
 
     header = blocks.Header(
         version=blocks.VERSION,
@@ -49,10 +58,9 @@ def blockchain_with_2_blocks(reward) -> blocks.Blockchain:
     return blockchain
 
 
-def test_proof_of_work(reward):
+def test_proof_of_work(merkle_root):
     """ """
     previous_hash = (0).to_bytes(32, byteorder="big")
-    merkle_root = hashlib.sha256(reward.encode()).digest()
     timestamp = 1634700000
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
@@ -107,7 +115,9 @@ def test_proof_of_work(reward):
     )
 
 
-def test_validate_blockchain(reward, blockchain_with_1_block, blockchain_with_2_blocks):
+def test_validate_blockchain(
+    reward, merkle_root, blockchain_with_1_block, blockchain_with_2_blocks
+):
     """ """
     blockchain = blockchain_with_1_block
     assert blocks.validate_blockchain(blockchain)
@@ -118,7 +128,7 @@ def test_validate_blockchain(reward, blockchain_with_1_block, blockchain_with_2_
     # Intentionally use zero previous hash to obtain invalid blockchain.
     _, _, _, header = blocks.run_proof_of_work(
         (0).to_bytes(32, byteorder="big"),
-        hashlib.sha256(reward.encode()).digest(),
+        merkle_root,
         1634701200,
         83000,
         1000,
