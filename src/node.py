@@ -103,7 +103,6 @@ def run(node: Node):
             # Create block reward if solved.
             assert header is not None
             reward = blocks.Transaction(
-                reference_hash=blocks.REWARD_HASH,
                 sender=blocks.REWARD_SENDER,
                 receiver=node.port,
             )

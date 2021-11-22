@@ -32,7 +32,7 @@ def init_hq(port: int) -> HQ:
     return HQ(port=port, sock=sock)
 
 
-def listen(hq: HQ):
+def run(hq: HQ):
     """ """
     while True:
         message = bytes.fromhex(input("> "))
@@ -45,4 +45,4 @@ def listen(hq: HQ):
 
 if __name__ == "__main__":
     hq = init_hq(port=HQ_PORT)
-    listen(hq)
+    run(hq)

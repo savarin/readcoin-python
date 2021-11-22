@@ -8,9 +8,7 @@ import blocks
 @pytest.fixture
 def reward() -> blocks.Transaction:
     """ """
-    return blocks.Transaction(
-        reference_hash=blocks.REWARD_HASH, sender=blocks.REWARD_SENDER, receiver=7000
-    )
+    return blocks.Transaction(sender=blocks.REWARD_SENDER, receiver=7000)
 
 
 @pytest.fixture
