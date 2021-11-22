@@ -191,21 +191,6 @@ def replace_blockchain(
     return validate_blockchain(remaining_blockchain, common_hash)
 
 
-def iterate_message(message: bytes) -> Generator:
-    """ """
-    message_size = len(message)
-    byte_index = 0
-
-    while True:
-        if byte_index == message_size:
-            yield None, None
-
-        block_size = message[byte_index]
-        yield block_size, message[byte_index : byte_index + block_size]
-
-        byte_index += block_size
-
-
 def decode_header(header_bytes: bytes) -> Header:
     """ """
     version = header_bytes[0]
@@ -246,6 +231,21 @@ def decode_transactions(
         transactions.append(transaction)
 
     return transactions
+
+
+def iterate_message(message: bytes) -> Generator:
+    """ """
+    message_size = len(message)
+    byte_index = 0
+
+    while True:
+        if byte_index == message_size:
+            yield None, None
+
+        block_size = message[byte_index]
+        yield block_size, message[byte_index : byte_index + block_size]
+
+        byte_index += block_size
 
 
 def decode_message(message: bytes) -> Blockchain:
