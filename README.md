@@ -1,6 +1,6 @@
 # readcoin
 
-Simple implementation of the Bitcoin protocol for educational purposes.
+Minimal implementation of the Bitcoin protocol for educational purposes.
 
 ## Context
 
@@ -12,13 +12,15 @@ We implement the Bitcoin protocol through multiple iterations:
 
 * [v1](https://github.com/savarin/readcoin/tree/v1) -
 mining and blockchain validation only, each block as a bytestring.
-* [v2](https://github.com/savarin/readcoin/tree/main) -
-include transaction validation, each block as a class with encode/decode semantics.
+* [v2](https://github.com/savarin/readcoin/tree/v2) -
+include blockchain class implementation with encode/decode semantics.
+* [v3](https://github.com/savarin/readcoin/tree/main) -
+include Merkle tree and transaction validation (in progress).
 
 The term readcoin refers to a blog by the author on readcoin.com (no longer operational). The first
 article can be found [here](https://gist.github.com/savarin/c71c1e4dfa4edf3b13bf36ccd8f6de17).
 
-Future plans include Merkle trees and cryptographic signing of transactions.
+Future plans include cryptographic signing of transactions.
 
 ## Installation
 
