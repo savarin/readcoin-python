@@ -37,3 +37,8 @@ def test_init_merkle_tree():
     assert tree_4.tree_hash == hash_1234
     assert tree_4.left.tree_hash == hash_12
     assert tree_4.right.tree_hash == hash_34
+
+    path_3 = tree.find_merkle_path(tree_4, hash_3)
+    assert path_3[0] == hash_1234
+    assert path_3[1] == hash_34
+    assert path_3[2] == hash_3
