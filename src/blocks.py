@@ -10,9 +10,8 @@ VERSION: int = 0
 
 HASH_SIZE: int = 32
 HEADER_SIZE: int = 69
-TRANSACTION_SIZE: int = 36
+TRANSACTION_SIZE: int = 4
 
-REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
 REWARD_SENDER: int = 0
 
 
@@ -39,16 +38,13 @@ class Header:
 class Transaction:
     """ """
 
-    reference_hash: Hash
     sender: int
     receiver: int
 
     def encode(self):
         """ """
-        return (
-            self.reference_hash
-            + self.sender.to_bytes(2, byteorder="big")
-            + self.receiver.to_bytes(2, byteorder="big")
+        return self.sender.to_bytes(2, byteorder="big") + self.receiver.to_bytes(
+            2, byteorder="big"
         )
 
 
@@ -109,7 +105,7 @@ def init_genesis_block() -> Block:
     guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())
     assert guess.hexdigest()[:4] == "0000"
 
-    transaction = Transaction(reference_hash=REWARD_HASH, sender=0, receiver=7000)
+    transaction = Transaction(sender=0, receiver=7000)
 
     return Block(header=header, transactions=[transaction])
 
@@ -207,13 +203,10 @@ def decode_header(header_bytes: bytes) -> Header:
 
 def decode_transaction(transaction_bytes: bytes) -> Transaction:
     """ """
-    reference_hash = transaction_bytes[:HASH_SIZE]
-    sender = int.from_bytes(
-        transaction_bytes[HASH_SIZE : HASH_SIZE + 2], byteorder="big"
-    )
-    receiver = int.from_bytes(transaction_bytes[HASH_SIZE + 2 :], byteorder="big")
+    sender = int.from_bytes(transaction_bytes[:2], byteorder="big")
+    receiver = int.from_bytes(transaction_bytes[2:], byteorder="big")
 
-    return Transaction(reference_hash=reference_hash, sender=sender, receiver=receiver)
+    return Transaction(sender=sender, receiver=receiver)
 
 
 def decode_transactions(
