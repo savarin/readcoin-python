@@ -22,8 +22,13 @@ Future plans include Merkle trees and cryptographic signing of transactions.
 
 ## Installation
 
-Running the code requires no imports but the environment variable `NODE_IP` needs to be set up as
-messages are sent via UDP.
+Running the code requires a single import.
+
+```shell
+pip install python-dotenv
+```
+
+The environment variable `NODE_IP` needs to be set up as messages are sent via UDP.
 
 ```shell
 echo 'NODE_IP='"$(ipconfig getifaddr en0)" > src/.env

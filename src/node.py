@@ -63,7 +63,7 @@ def run(node: Node):
         try:
             # Listen for incoming messages, with maximum size set at OS X maximum UDP package size
             # of 9216 bytes.
-            node.sock.settimeout(0.1)
+            node.sock.settimeout(1)
             message, _ = node.sock.recvfrom(9216)
 
             # Decode message and check blockchain is valid.
@@ -86,10 +86,17 @@ def run(node: Node):
             time.sleep(sleep_time)
 
         except socket.timeout:
+            reward = blocks.Transaction(
+                reference_hash=blocks.REWARD_HASH,
+                sender=blocks.REWARD_SENDER,
+                receiver=node.port,
+            )
+            merkle_root = hashlib.sha256(reward.encode()).digest()
+
             # Run proof-of-work.
             print(f"TRY up to {nonce}...")
             is_new_block, _, current_hash, header = blocks.run_proof_of_work(
-                previous_hash, timestamp, nonce, 1000
+                previous_hash, merkle_root, timestamp, nonce, 1000
             )
 
             # Switch to listening mode if not solved after 1000 nonce values.
@@ -102,10 +109,7 @@ def run(node: Node):
 
             # Create block reward if solved.
             assert header is not None
-            reward = blocks.Transaction(
-                sender=blocks.REWARD_SENDER,
-                receiver=node.port,
-            )
+
             block = blocks.Block(header=header, transactions=[reward])
 
             # Append new block to blockchain.

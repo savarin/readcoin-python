@@ -9,9 +9,10 @@ Hash = bytes
 VERSION: int = 0
 
 HASH_SIZE: int = 32
-HEADER_SIZE: int = 69
-TRANSACTION_SIZE: int = 4
+HEADER_SIZE: int = 101
+TRANSACTION_SIZE: int = 36
 
+REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
 REWARD_SENDER: int = 0
 
 
@@ -21,6 +22,7 @@ class Header:
 
     version: int
     previous_hash: Hash
+    merkle_root: Hash
     timestamp: int
     nonce: int
 
@@ -29,6 +31,7 @@ class Header:
         return (
             self.version.to_bytes(1, byteorder="big")
             + self.previous_hash
+            + self.merkle_root
             + self.timestamp.to_bytes(4, byteorder="big")
             + self.nonce.to_bytes(32, byteorder="big")
         )
@@ -38,13 +41,16 @@ class Header:
 class Transaction:
     """ """
 
+    reference_hash: Hash
     sender: int
     receiver: int
 
     def encode(self):
         """ """
-        return self.sender.to_bytes(2, byteorder="big") + self.receiver.to_bytes(
-            2, byteorder="big"
+        return (
+            self.reference_hash
+            + self.sender.to_bytes(2, byteorder="big")
+            + self.receiver.to_bytes(2, byteorder="big")
         )
 
 
@@ -97,21 +103,27 @@ class Blockchain:
 
 def init_genesis_block() -> Block:
     """ """
+    reward = Transaction(reference_hash=REWARD_HASH, sender=0, receiver=7000)
+    merkle_root = hashlib.sha256(reward.encode()).digest()
+
     previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
     header = Header(
-        version=VERSION, previous_hash=previous_hash, timestamp=1634700000, nonce=70822
+        version=VERSION,
+        previous_hash=previous_hash,
+        merkle_root=merkle_root,
+        timestamp=1634700000,
+        nonce=102275,
     )
 
     guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())
     assert guess.hexdigest()[:4] == "0000"
 
-    transaction = Transaction(sender=0, receiver=7000)
-
-    return Block(header=header, transactions=[transaction])
+    return Block(header=header, transactions=[reward])
 
 
 def run_proof_of_work(
     previous_hash: Hash,
+    merkle_root: Hash,
     timestamp: int,
     nonce: int = 0,
     iterations: Optional[int] = None,
@@ -127,6 +139,7 @@ def run_proof_of_work(
         header = Header(
             version=VERSION,
             previous_hash=previous_hash,
+            merkle_root=merkle_root,
             timestamp=timestamp,
             nonce=nonce,
         )
@@ -191,22 +204,33 @@ def decode_header(header_bytes: bytes) -> Header:
     """ """
     version = header_bytes[0]
     previous_hash = header_bytes[1 : 1 + HASH_SIZE]
+    merkle_root = header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE]
     timestamp = int.from_bytes(
-        header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + 4], byteorder="big"
+        header_bytes[1 + HASH_SIZE + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE + 4],
+        byteorder="big",
     )
-    nonce = int.from_bytes(header_bytes[1 + HASH_SIZE + 4 :], byteorder="big")
+    nonce = int.from_bytes(
+        header_bytes[1 + HASH_SIZE + HASH_SIZE + 4 :], byteorder="big"
+    )
 
     return Header(
-        version=version, previous_hash=previous_hash, timestamp=timestamp, nonce=nonce
+        version=version,
+        previous_hash=previous_hash,
+        merkle_root=merkle_root,
+        timestamp=timestamp,
+        nonce=nonce,
     )
 
 
 def decode_transaction(transaction_bytes: bytes) -> Transaction:
     """ """
-    sender = int.from_bytes(transaction_bytes[:2], byteorder="big")
-    receiver = int.from_bytes(transaction_bytes[2:], byteorder="big")
+    reference_hash = transaction_bytes[:HASH_SIZE]
+    sender = int.from_bytes(
+        transaction_bytes[HASH_SIZE : HASH_SIZE + 2], byteorder="big"
+    )
+    receiver = int.from_bytes(transaction_bytes[HASH_SIZE + 2 :], byteorder="big")
 
-    return Transaction(sender=sender, receiver=receiver)
+    return Transaction(reference_hash=reference_hash, sender=sender, receiver=receiver)
 
 
 def decode_transactions(

@@ -8,7 +8,9 @@ import blocks
 @pytest.fixture
 def reward() -> blocks.Transaction:
     """ """
-    return blocks.Transaction(sender=blocks.REWARD_SENDER, receiver=7000)
+    return blocks.Transaction(
+        reference_hash=blocks.REWARD_HASH, sender=blocks.REWARD_SENDER, receiver=7000
+    )
 
 
 @pytest.fixture
@@ -28,11 +30,14 @@ def blockchain_with_2_blocks(reward) -> blocks.Blockchain:
 
     blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
 
+    merkle_root = hashlib.sha256(reward.encode()).digest()
+
     header = blocks.Header(
         version=blocks.VERSION,
         previous_hash=block_hash,
+        merkle_root=merkle_root,
         timestamp=1634700600,
-        nonce=58768,
+        nonce=76628,
     )
 
     block = blocks.Block(header=header, transactions=[reward])
@@ -44,13 +49,14 @@ def blockchain_with_2_blocks(reward) -> blocks.Blockchain:
     return blockchain
 
 
-def test_proof_of_work():
+def test_proof_of_work(reward):
     """ """
     previous_hash = (0).to_bytes(32, byteorder="big")
+    merkle_root = hashlib.sha256(reward.encode()).digest()
     timestamp = 1634700000
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, timestamp, 0, 1000
+        previous_hash, merkle_root, timestamp, 0, 1000
     )
 
     assert not is_new_block
@@ -59,25 +65,25 @@ def test_proof_of_work():
     assert header is None
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, timestamp, 70000, 1000
+        previous_hash, merkle_root, timestamp, 102000, 1000
     )
 
     assert is_new_block
-    assert nonce == 70822
+    assert nonce == 102275
     assert (
         bytes.hex(block_hash)
-        == "00001ff58495c3dc2a1aaa69ebca4e9b3e05e63e5a319fb73bcdccbcdbba1e72"
+        == "0000e07d18285944711e785cfa7aa96443ddc9a4dfacce935d3bbc9793181ad6"
     )
     assert (
         bytes.hex(header.encode())
-        == "000000000000000000000000000000000000000000000000000000000000000000616f8ae000000000000000000000000000000000000000000000000000000000000114a6"
+        == "000000000000000000000000000000000000000000000000000000000000000000281d8712b36b4365bd09fe91de46e78b69d5d4ecf078252eb35b2cbbb24ba057616f8ae00000000000000000000000000000000000000000000000000000000000018f83"
     )
 
     previous_hash = block_hash
     timestamp = 1634700600
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, timestamp, 0, 1000
+        previous_hash, merkle_root, timestamp, 0, 1000
     )
 
     assert not is_new_block
@@ -86,18 +92,18 @@ def test_proof_of_work():
     assert header is None
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, timestamp, 58000, 1000
+        previous_hash, merkle_root, timestamp
     )
 
     assert is_new_block
-    assert nonce == 58768
+    assert nonce == 76628
     assert (
         bytes.hex(block_hash)
-        == "000071e6ff5b358e57339b42d45b20acc0f112c218fa435b3ffa8f239b777347"
+        == "0000081cb4a5178d10f9c148f941790815a915eaebf8036d86d5b512ee57bcff"
     )
     assert (
         bytes.hex(header.encode())
-        == "0000001ff58495c3dc2a1aaa69ebca4e9b3e05e63e5a319fb73bcdccbcdbba1e72616f8d38000000000000000000000000000000000000000000000000000000000000e590"
+        == "000000e07d18285944711e785cfa7aa96443ddc9a4dfacce935d3bbc9793181ad6281d8712b36b4365bd09fe91de46e78b69d5d4ecf078252eb35b2cbbb24ba057616f8d380000000000000000000000000000000000000000000000000000000000012b54"
     )
 
 
@@ -109,8 +115,13 @@ def test_validate_blockchain(reward, blockchain_with_1_block, blockchain_with_2_
     blockchain = blockchain_with_2_blocks
     assert blocks.validate_blockchain(blockchain)
 
+    # Intentionally use zero previous hash to obtain invalid blockchain.
     _, _, _, header = blocks.run_proof_of_work(
-        (0).to_bytes(32, byteorder="big"), 1634701200, 95000, 1000
+        (0).to_bytes(32, byteorder="big"),
+        hashlib.sha256(reward.encode()).digest(),
+        1634701200,
+        83000,
+        1000,
     )
 
     block = blocks.Block(header=header, transactions=[reward])
