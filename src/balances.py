@@ -76,12 +76,20 @@ def init_transfer(
     return balance, transaction
 
 
-def validate_transfer(balance: Balance, transaction: transacts.Transaction) -> bool:
+def validate_transaction(balance: Balance, transaction: transacts.Transaction) -> bool:
     """ """
-    if (
-        transaction.sender not in balance.account
-        or len(balance.account[transaction.sender]) == 0
-    ):
+    sender = transaction.sender
+
+    is_zero_reference = transaction.reference_hash == blocks.REWARD_HASH
+    is_zero_sender = sender == 0
+
+    if is_zero_reference and is_zero_sender:
+        return True
+
+    elif is_zero_reference != is_zero_sender:
+        return False
+
+    if sender not in balance.account or len(balance.account[sender]) == 0:
         return False
 
     return transaction.reference_hash in balance.account[transaction.sender]
