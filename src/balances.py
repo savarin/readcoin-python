@@ -52,11 +52,10 @@ def update_balance_with_blockchain(
         return False, None
 
     hash_index = blockchain.chain.index(balance.latest_hash)
+    account = balance.account
 
     for block_hash in blockchain.chain[hash_index + 1 :]:
-        balance.account = update_account_with_block(
-            balance.account, blockchain, block_hash
-        )
+        account = update_account_with_block(account, blockchain, block_hash)
 
     return True, balance
 
@@ -86,7 +85,7 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     if is_zero_reference and is_zero_sender:
         return True
 
-    elif is_zero_reference != is_zero_sender:
+    if is_zero_reference != is_zero_sender:
         return False
 
     if sender not in balance.account or len(balance.account[sender]) == 0:
