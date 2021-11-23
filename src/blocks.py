@@ -2,7 +2,7 @@ from typing import Dict, Generator, List, Optional, Tuple
 import dataclasses
 import hashlib
 
-import tree
+import transactions as transacts
 
 
 Hash = bytes
@@ -12,7 +12,6 @@ VERSION: int = 0
 
 HASH_SIZE: int = 32
 HEADER_SIZE: int = 101
-TRANSACTION_SIZE: int = 36
 
 REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
 REWARD_SENDER: int = 0
@@ -39,21 +38,26 @@ class Header:
         )
 
 
-@dataclasses.dataclass
-class Transaction:
+def decode_header(header_bytes: bytes) -> Header:
     """ """
+    version = header_bytes[0]
+    previous_hash = header_bytes[1 : 1 + HASH_SIZE]
+    merkle_root = header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE]
+    timestamp = int.from_bytes(
+        header_bytes[1 + HASH_SIZE + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE + 4],
+        byteorder="big",
+    )
+    nonce = int.from_bytes(
+        header_bytes[1 + HASH_SIZE + HASH_SIZE + 4 :], byteorder="big"
+    )
 
-    reference_hash: Hash
-    sender: int
-    receiver: int
-
-    def encode(self):
-        """ """
-        return (
-            self.reference_hash
-            + self.sender.to_bytes(2, byteorder="big")
-            + self.receiver.to_bytes(2, byteorder="big")
-        )
+    return Header(
+        version=version,
+        previous_hash=previous_hash,
+        merkle_root=merkle_root,
+        timestamp=timestamp,
+        nonce=nonce,
+    )
 
 
 @dataclasses.dataclass
@@ -61,7 +65,7 @@ class Block:
     """ """
 
     header: Header
-    transactions: List[Transaction]
+    transactions: List[transacts.Transaction]
 
     def encode(self):
         """ """
@@ -103,11 +107,55 @@ class Blockchain:
         return blockchain_bytes
 
 
+def iterate_message(message: bytes) -> Generator:
+    """ """
+    message_size = len(message)
+    byte_index = 0
+
+    while True:
+        if byte_index == message_size:
+            yield None, None
+
+        block_size = message[byte_index]
+        yield block_size, message[byte_index : byte_index + block_size]
+
+        byte_index += block_size
+
+
+def decode_message(message: bytes) -> Blockchain:
+    """ """
+    chain: List[Hash] = []
+    blocks: Dict[Hash, Block] = {}
+
+    for block_size, block_bytes in iterate_message(message):
+        if block_size is None:
+            break
+
+        header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
+        transaction_counter = int.from_bytes(
+            block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+        )
+        transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
+
+        header = decode_header(header_bytes)
+        transactions = transacts.decode_transactions(
+            transaction_counter, transactions_bytes
+        )
+
+        block = Block(header=header, transactions=transactions)
+        block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
+        chain.append(block_hash)
+        blocks[block_hash] = block
+
+    return Blockchain(chain=chain, blocks=blocks)
+
+
 def init_genesis_block() -> Block:
     """ """
-    reward = Transaction(reference_hash=REWARD_HASH, sender=0, receiver=7000)
+    reward = transacts.Transaction(reference_hash=REWARD_HASH, sender=0, receiver=7000)
     transaction_hash = hashlib.sha256(reward.encode()).digest()
-    merkle_tree = tree.init_merkle_tree([transaction_hash])
+    merkle_tree = transacts.init_merkle_tree([transaction_hash])
 
     assert merkle_tree is not None
     merkle_root = merkle_tree.tree_hash
@@ -204,97 +252,3 @@ def replace_blockchain(
     )
 
     return validate_blockchain(remaining_blockchain, common_hash)
-
-
-def decode_header(header_bytes: bytes) -> Header:
-    """ """
-    version = header_bytes[0]
-    previous_hash = header_bytes[1 : 1 + HASH_SIZE]
-    merkle_root = header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE]
-    timestamp = int.from_bytes(
-        header_bytes[1 + HASH_SIZE + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE + 4],
-        byteorder="big",
-    )
-    nonce = int.from_bytes(
-        header_bytes[1 + HASH_SIZE + HASH_SIZE + 4 :], byteorder="big"
-    )
-
-    return Header(
-        version=version,
-        previous_hash=previous_hash,
-        merkle_root=merkle_root,
-        timestamp=timestamp,
-        nonce=nonce,
-    )
-
-
-def decode_transaction(transaction_bytes: bytes) -> Transaction:
-    """ """
-    reference_hash = transaction_bytes[:HASH_SIZE]
-    sender = int.from_bytes(
-        transaction_bytes[HASH_SIZE : HASH_SIZE + 2], byteorder="big"
-    )
-    receiver = int.from_bytes(transaction_bytes[HASH_SIZE + 2 :], byteorder="big")
-
-    return Transaction(reference_hash=reference_hash, sender=sender, receiver=receiver)
-
-
-def decode_transactions(
-    transaction_counter: int, transactions_bytes: bytes
-) -> List[Transaction]:
-    """ """
-    transactions: List[Transaction] = []
-
-    for i in range(transaction_counter):
-        transaction_bytes = transactions_bytes[
-            i * TRANSACTION_SIZE : (i + 1) * TRANSACTION_SIZE
-        ]
-        transaction = decode_transaction(transaction_bytes)
-
-        transactions.append(transaction)
-
-    return transactions
-
-
-def iterate_message(message: bytes) -> Generator:
-    """ """
-    message_size = len(message)
-    byte_index = 0
-
-    while True:
-        if byte_index == message_size:
-            yield None, None
-
-        block_size = message[byte_index]
-        yield block_size, message[byte_index : byte_index + block_size]
-
-        byte_index += block_size
-
-
-def decode_message(message: bytes) -> Blockchain:
-    """ """
-    chain: List[Hash] = []
-    blocks: Dict[Hash, Block] = {}
-
-    for block_size, block_bytes in iterate_message(message):
-        if block_size is None:
-            break
-
-        header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
-        transaction_counter = int.from_bytes(
-            block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
-        )
-        transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
-
-        header = decode_header(header_bytes)
-
-        # TODO: Check transactions divisible by transaction size and equal to transaction counter
-        transactions = decode_transactions(transaction_counter, transactions_bytes)
-
-        block = Block(header=header, transactions=transactions)
-        block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
-
-        chain.append(block_hash)
-        blocks[block_hash] = block
-
-    return Blockchain(chain=chain, blocks=blocks)

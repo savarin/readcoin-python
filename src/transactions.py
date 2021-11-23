@@ -6,6 +6,55 @@ import hashlib
 Hash = bytes
 
 
+HASH_SIZE: int = 32
+TRANSACTION_SIZE: int = 36
+
+
+@dataclasses.dataclass
+class Transaction:
+    """ """
+
+    reference_hash: Hash
+    sender: int
+    receiver: int
+
+    def encode(self):
+        """ """
+        return (
+            self.reference_hash
+            + self.sender.to_bytes(2, byteorder="big")
+            + self.receiver.to_bytes(2, byteorder="big")
+        )
+
+
+def decode_transaction(transaction_bytes: bytes) -> Transaction:
+    """ """
+    reference_hash = transaction_bytes[:HASH_SIZE]
+    sender = int.from_bytes(
+        transaction_bytes[HASH_SIZE : HASH_SIZE + 2], byteorder="big"
+    )
+    receiver = int.from_bytes(transaction_bytes[HASH_SIZE + 2 :], byteorder="big")
+
+    return Transaction(reference_hash=reference_hash, sender=sender, receiver=receiver)
+
+
+def decode_transactions(
+    transaction_counter: int, transactions_bytes: bytes
+) -> List[Transaction]:
+    """ """
+    transactions: List[Transaction] = []
+
+    for i in range(transaction_counter):
+        transaction_bytes = transactions_bytes[
+            i * TRANSACTION_SIZE : (i + 1) * TRANSACTION_SIZE
+        ]
+        transaction = decode_transaction(transaction_bytes)
+
+        transactions.append(transaction)
+
+    return transactions
+
+
 @dataclasses.dataclass
 class Tree:
     """ """
@@ -63,18 +112,16 @@ def find_merkle_path(merkle_tree: Tree, transaction_hash: Hash) -> Optional[List
 
         if left_tree is not None:
             assert right_tree is not None
-            left_path = path + [right_tree.tree_hash]
             queue.append((path + [right_tree.tree_hash], left_tree))
 
         if right_tree is not None:
             assert left_tree is not None
-            right_path = path + [left_tree.tree_hash]
             queue.append((path + [left_tree.tree_hash], right_tree))
 
     return None
 
 
-def validate_merkle_path(path: Optional[List[bytes]]):
+def validate_merkle_path(path: Optional[List[Hash]]):
     """ """
     if path is None:
         return False

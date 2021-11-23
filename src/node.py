@@ -9,6 +9,7 @@ import dotenv
 
 import blocks
 import helpers
+import transactions as transacts
 
 
 dotenv.load_dotenv()
@@ -86,7 +87,7 @@ def run(node: Node):
             time.sleep(sleep_time)
 
         except socket.timeout:
-            reward = blocks.Transaction(
+            reward = transacts.Transaction(
                 reference_hash=blocks.REWARD_HASH,
                 sender=blocks.REWARD_SENDER,
                 receiver=node.port,
