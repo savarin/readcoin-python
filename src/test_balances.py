@@ -51,10 +51,7 @@ def merkle_root_with_2_transactions(reward, transfer) -> blocks.Hash:
 @pytest.fixture
 def blockchain_with_1_block() -> blocks.Blockchain:
     """ """
-    block = blocks.init_genesis_block()
-    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
-
-    return blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+    return blocks.init_blockchain()
 
 
 @pytest.fixture
@@ -62,14 +59,11 @@ def blockchain_with_2_blocks(
     reward, transfer, merkle_root_with_2_transactions
 ) -> blocks.Blockchain:
     """ """
-    block = blocks.init_genesis_block()
-    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
-
-    blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+    blockchain = blocks.init_blockchain()
 
     header = blocks.Header(
         version=blocks.VERSION,
-        previous_hash=block_hash,
+        previous_hash=blockchain.chain[0],
         merkle_root=merkle_root_with_2_transactions,
         timestamp=1634700600,
         nonce=22025,
@@ -145,3 +139,50 @@ def test_validate_transaction(reward, transfer, blockchain_with_2_blocks):
     assert not balances.validate_transaction(post_transfer_balance, transfer)
 
     assert id(pre_transfer_balance) == id(post_transfer_balance)
+
+
+def test_validate_blockchain(
+    reward,
+    merkle_root_with_1_transaction,
+    blockchain_with_1_block,
+    blockchain_with_2_blocks,
+):
+    """ """
+    is_valid_blockchain, _ = balances.validate_blockchain(blockchain_with_1_block)
+    assert is_valid_blockchain
+
+    is_valid_blockchain, _ = balances.validate_blockchain(blockchain_with_2_blocks)
+    assert is_valid_blockchain
+
+    # Intentionally use zero previous hash to obtain invalid blockchain.
+    _, _, _, header = blocks.run_proof_of_work(
+        (0).to_bytes(32, byteorder="big"),
+        merkle_root_with_1_transaction,
+        1634701200,
+        83000,
+        1000,
+    )
+
+    block = blocks.Block(header=header, transactions=[reward])
+    block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
+    blockchain = blockchain_with_2_blocks
+
+    blockchain.chain.append(block_hash)
+    blockchain.blocks[block_hash] = block
+
+    is_valid_blockchain, _ = balances.validate_blockchain(blockchain)
+    assert not is_valid_blockchain
+
+
+def test_replace_blockchain(blockchain_with_1_block, blockchain_with_2_blocks):
+    """ """
+    is_valid_blockchain, _ = balances.replace_blockchain(
+        blockchain_with_2_blocks, blockchain_with_1_block
+    )
+    assert is_valid_blockchain
+
+    is_valid_blockchain, _ = balances.replace_blockchain(
+        blockchain_with_1_block, blockchain_with_1_block
+    )
+    assert not is_valid_blockchain

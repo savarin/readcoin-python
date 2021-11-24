@@ -132,12 +132,12 @@ def validate_merkle_path(path: Optional[List[Hash]]):
     root_hash = path.pop()
     candidate_tree = Tree(tree_hash=path[0], left=None, right=None)
 
-    subtrees_in = [(candidate_tree.tree_hash, candidate_tree)]
-    subtrees_out = []
+    queue_in = [(candidate_tree.tree_hash, candidate_tree)]
+    queue_out = []
 
     for i, child_hash in enumerate(path[1:]):
-        while subtrees_in:
-            current_hash, current_tree = subtrees_in.pop()
+        while queue_in:
+            current_hash, current_tree = queue_in.pop()
 
             left_hash = hashlib.sha256(current_hash + child_hash).digest()
             right_hash = hashlib.sha256(child_hash + current_hash).digest()
@@ -148,11 +148,11 @@ def validate_merkle_path(path: Optional[List[Hash]]):
             current_tree.left = left
             current_tree.right = right
 
-            subtrees_out += [(left_hash, left)]
-            subtrees_out += [(right_hash, right)]
+            queue_out += [(left_hash, left)]
+            queue_out += [(right_hash, right)]
 
-        subtrees_in = subtrees_out.copy()
-        subtrees_out = []
+        queue_in = queue_out.copy()
+        queue_out = []
 
     candidate_hashes = []
     queue = [candidate_tree]

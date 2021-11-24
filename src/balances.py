@@ -83,3 +83,57 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
         return False
 
     return transaction.reference_hash in balance.accounts[transaction.sender]
+
+
+def validate_blockchain(
+    blockchain: blocks.Blockchain, balance: Optional[Balance] = None
+) -> Tuple[bool, Optional[Balance]]:
+    """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
+    if balance is None:
+        balance = init_balance(blocks.init_blockchain())
+
+    previous_hash = balance.latest_hash
+    block_index = blockchain.chain.index(previous_hash)
+
+    for block_hash in blockchain.chain[block_index + 1 :]:
+        block = blockchain.blocks[block_hash]
+        is_valid_block, current_hash = blocks.validate_block(block, previous_hash)
+
+        if not is_valid_block:
+            return False, None
+
+        for transaction in block.transactions:
+            is_valid_transaction = validate_transaction(balance, transaction)
+
+            if not is_valid_transaction:
+                return False, None
+
+        assert current_hash is not None
+        previous_hash = current_hash
+        balance = update_balance(balance, block)
+
+    return True, balance
+
+
+def replace_blockchain(
+    potential_blockchain: blocks.Blockchain,
+    current_blockchain: blocks.Blockchain,
+    balance: Optional[Balance] = None,
+) -> Tuple[bool, Optional[Balance]]:
+    """Compare blockchains and replace if potential blockchain is longer and valid."""
+    current_chain = current_blockchain.chain
+
+    if len(potential_blockchain.chain) <= len(current_chain):
+        return False, None
+
+    for i, block_hash in enumerate(potential_blockchain.chain):
+        if i == len(current_chain) or block_hash != current_chain[i]:
+            break
+
+    if balance is not None:
+        latest_index = current_chain.index(balance.latest_hash)
+
+        if latest_index <= i:
+            return validate_blockchain(potential_blockchain, balance)
+
+    return validate_blockchain(potential_blockchain, None)

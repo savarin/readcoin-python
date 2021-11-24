@@ -7,6 +7,7 @@ import time
 
 import dotenv
 
+import balances
 import blocks
 import helpers
 import transactions as transacts
@@ -18,9 +19,6 @@ NODE_IP = os.getenv("NODE_IP")
 NODE_PORTS = [7000, 8000, 9000]
 
 
-GENESIS_BLOCK = blocks.init_genesis_block()
-
-
 @dataclasses.dataclass
 class Node:
     """ """
@@ -28,6 +26,7 @@ class Node:
     port: int
     sock: socket.socket
     blockchain: blocks.Blockchain
+    balance: balances.Balance
 
 
 def init_node(port: int) -> Node:
@@ -35,14 +34,10 @@ def init_node(port: int) -> Node:
     assert NODE_IP is not None
     sock = helpers.bind_socket(NODE_IP, port)
 
-    block_hash = hashlib.sha256(
-        hashlib.sha256(GENESIS_BLOCK.header.encode()).digest()
-    ).digest()
-    blockchain = blocks.Blockchain(
-        chain=[block_hash], blocks={block_hash: GENESIS_BLOCK}
-    )
+    blockchain = blocks.init_blockchain()
+    balance = balances.init_balance(blockchain)
 
-    return Node(port=port, sock=sock, blockchain=blockchain)
+    return Node(port=port, sock=sock, blockchain=blockchain, balance=balance)
 
 
 def broadcast(node: Node, message: bytes):
@@ -70,7 +65,11 @@ def run(node: Node):
             # Decode message and check blockchain is valid.
             blockchain = blocks.decode_blockchain(message)
 
-            if not blocks.replace_blockchain(node.blockchain, blockchain):
+            is_valid_blockchain, balance = balances.replace_blockchain(
+                blockchain, node.blockchain
+            )
+
+            if not is_valid_blockchain:
                 print("IGNORE blockchain...")
                 continue
 
@@ -80,6 +79,10 @@ def run(node: Node):
             block_hash = blockchain.chain[-1]
 
             print(f"COPY block {blockchain_counter - 1}: {bytes.hex(block_hash)}!")
+
+            # Replace balance
+            assert balance is not None
+            node.balance = balance
 
             # Force sleep to randomize timestamp.
             sleep_time = (node.port + blockchain_counter) % 3 + 1
@@ -122,6 +125,9 @@ def run(node: Node):
             print(
                 f"CREATE block {len(node.blockchain.chain) - 1}: {bytes.hex(block_hash)}!"
             )
+
+            # Update balance
+            node.balance = balances.update_balance(node.balance, block)
 
         # Reset values for next block header.
         previous_hash = block_hash

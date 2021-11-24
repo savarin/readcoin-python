@@ -181,6 +181,16 @@ def init_genesis_block() -> Block:
     return Block(header=header, transactions=[reward])
 
 
+def init_blockchain() -> Blockchain:
+    """ """
+    genesis_block = init_genesis_block()
+    genesis_hash = hashlib.sha256(
+        hashlib.sha256(genesis_block.header.encode()).digest()
+    ).digest()
+
+    return Blockchain(chain=[genesis_hash], blocks={genesis_hash: genesis_block})
+
+
 def run_proof_of_work(
     previous_hash: Hash,
     merkle_root: Hash,
@@ -227,44 +237,3 @@ def validate_block(block: Block, previous_hash: Hash) -> Tuple[bool, Optional[Ha
         return False, None
 
     return True, guess.digest()
-
-
-def validate_blockchain(
-    blockchain: Blockchain, previous_hash: Optional[Hash] = None
-) -> bool:
-    """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
-    if previous_hash is None:
-        previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
-
-    for block_hash in blockchain.chain:
-        block = blockchain.blocks[block_hash]
-
-        assert previous_hash is not None
-        is_valid_block, previous_hash = validate_block(block, previous_hash)
-
-        if not is_valid_block:
-            return False
-
-    return True
-
-
-def replace_blockchain(
-    current_blockchain: Blockchain, potential_blockchain: Blockchain
-):
-    """Compare blockchains and replace if potential blockchain is longer and valid."""
-    if len(potential_blockchain.chain) < len(current_blockchain.chain):
-        return False
-
-    for i, block_hash in enumerate(potential_blockchain.chain):
-        current_chain = current_blockchain.chain
-
-        if i == len(current_chain) or block_hash != current_chain[i]:
-            break
-
-        common_hash = block_hash
-
-    remaining_blockchain = Blockchain(
-        chain=potential_blockchain.chain[i:], blocks=potential_blockchain.blocks
-    )
-
-    return validate_blockchain(remaining_blockchain, common_hash)

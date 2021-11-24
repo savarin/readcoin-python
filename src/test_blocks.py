@@ -50,10 +50,7 @@ def merkle_root_with_2_transactions(reward, transfer) -> blocks.Hash:
 @pytest.fixture
 def blockchain_with_1_block() -> blocks.Blockchain:
     """ """
-    block = blocks.init_genesis_block()
-    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
-
-    return blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+    return blocks.init_blockchain()
 
 
 @pytest.fixture
@@ -61,14 +58,11 @@ def blockchain_with_2_blocks(
     reward, transfer, merkle_root_with_2_transactions
 ) -> blocks.Blockchain:
     """ """
-    block = blocks.init_genesis_block()
-    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
-
-    blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
+    blockchain = blocks.init_blockchain()
 
     header = blocks.Header(
         version=blocks.VERSION,
-        previous_hash=block_hash,
+        previous_hash=blockchain.chain[0],
         merkle_root=merkle_root_with_2_transactions,
         timestamp=1634700600,
         nonce=22025,
@@ -137,45 +131,6 @@ def test_proof_of_work(merkle_root_with_1_transaction, merkle_root_with_2_transa
     assert (
         bytes.hex(header.encode())
         == "000000e07d18285944711e785cfa7aa96443ddc9a4dfacce935d3bbc9793181ad6c1dcd5b493c8667c3ce50a62fb660cb545074f8d63bf2424bcff323005130179616f8d380000000000000000000000000000000000000000000000000000000000005609"
-    )
-
-
-def test_validate_blockchain(
-    reward,
-    merkle_root_with_1_transaction,
-    blockchain_with_1_block,
-    blockchain_with_2_blocks,
-):
-    """ """
-    blockchain = blockchain_with_1_block
-    assert blocks.validate_blockchain(blockchain)
-
-    blockchain = blockchain_with_2_blocks
-    assert blocks.validate_blockchain(blockchain)
-
-    # Intentionally use zero previous hash to obtain invalid blockchain.
-    _, _, _, header = blocks.run_proof_of_work(
-        (0).to_bytes(32, byteorder="big"),
-        merkle_root_with_1_transaction,
-        1634701200,
-        83000,
-        1000,
-    )
-
-    block = blocks.Block(header=header, transactions=[reward])
-    block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
-
-    blockchain.chain.append(block_hash)
-    blockchain.blocks[block_hash] = block
-
-    assert not blocks.validate_blockchain(blockchain)
-
-
-def test_replace_blockchain(blockchain_with_1_block, blockchain_with_2_blocks):
-    """ """
-    assert blocks.replace_blockchain(blockchain_with_1_block, blockchain_with_2_blocks)
-    assert not blocks.replace_blockchain(
-        blockchain_with_1_block, blockchain_with_1_block
     )
 
 
