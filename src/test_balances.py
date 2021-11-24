@@ -138,6 +138,7 @@ def test_validate_transaction(reward, transfer, blockchain_with_2_blocks):
     post_transfer_balance, _ = balances.init_transfer(pre_transfer_balance, 7000, 8000)
     assert not balances.validate_transaction(post_transfer_balance, transfer)
 
+    # Include check on non-immutability for closer review.
     assert id(pre_transfer_balance) == id(post_transfer_balance)
 
 
