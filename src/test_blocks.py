@@ -98,7 +98,7 @@ def test_proof_of_work(merkle_root_with_1_transaction, merkle_root_with_2_transa
     assert header is None
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, merkle_root_with_1_transaction, timestamp
+        previous_hash, merkle_root_with_1_transaction, timestamp, 102000, 1000
     )
 
     assert is_new_block
@@ -125,7 +125,7 @@ def test_proof_of_work(merkle_root_with_1_transaction, merkle_root_with_2_transa
     assert header is None
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, merkle_root_with_2_transactions, timestamp
+        previous_hash, merkle_root_with_2_transactions, timestamp, 22000, 1000
     )
 
     assert is_new_block
