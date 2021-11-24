@@ -5,9 +5,6 @@ import hashlib
 import transactions as transacts
 
 
-Hash = bytes
-
-
 VERSION: int = 0
 
 HASH_SIZE: int = 32
@@ -22,8 +19,8 @@ class Header:
     """ """
 
     version: int
-    previous_hash: Hash
-    merkle_root: Hash
+    previous_hash: transacts.Hash
+    merkle_root: transacts.Hash
     timestamp: int
     nonce: int
 
@@ -110,8 +107,8 @@ def decode_block(block_bytes: bytes) -> Block:
 class Blockchain:
     """ """
 
-    chain: List[Hash]
-    blocks: Dict[Hash, Block]
+    chain: List[transacts.Hash]
+    blocks: Dict[transacts.Hash, Block]
 
     def encode(self):
         """ """
@@ -140,8 +137,8 @@ def iterate_blockchain(blockchain_bytes: bytes) -> Generator:
 
 def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
     """ """
-    chain: List[Hash] = []
-    blocks: Dict[Hash, Block] = {}
+    chain: List[transacts.Hash] = []
+    blocks: Dict[transacts.Hash, Block] = {}
 
     for block_size, block_bytes in iterate_blockchain(blockchain_bytes):
         if block_size is None:
@@ -192,12 +189,12 @@ def init_blockchain() -> Blockchain:
 
 
 def run_proof_of_work(
-    previous_hash: Hash,
-    merkle_root: Hash,
+    previous_hash: transacts.Hash,
+    merkle_root: transacts.Hash,
     timestamp: int,
     nonce: int = 0,
     iterations: Optional[int] = None,
-) -> Tuple[bool, int, Optional[Hash], Optional[Header]]:
+) -> Tuple[bool, int, Optional[transacts.Hash], Optional[Header]]:
     """Find nonce that makes the first 4 bytes of twice-hashed header all zeroes. Maximum number of
     iterations can be specified."""
     iteration_counter = 0
@@ -224,10 +221,10 @@ def run_proof_of_work(
     return True, nonce, guess.digest(), header
 
 
-def validate_block(block: Block, previous_hash: Hash) -> Tuple[bool, Optional[Hash]]:
+def validate_header(
+    header: Header, previous_hash: transacts.Hash
+) -> Tuple[bool, Optional[transacts.Hash]]:
     """ """
-    header = block.header
-
     if header.previous_hash != previous_hash:
         return False, None
 

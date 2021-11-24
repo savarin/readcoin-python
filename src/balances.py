@@ -7,14 +7,14 @@ import blocks
 import transactions as transacts
 
 
-Accounts = DefaultDict[int, List[blocks.Hash]]
+Accounts = DefaultDict[int, List[transacts.Hash]]
 
 
 @dataclasses.dataclass
 class Balance:
     """ """
 
-    latest_hash: blocks.Hash
+    latest_hash: transacts.Hash
     accounts: Accounts
 
 
@@ -85,6 +85,24 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     return transaction.reference_hash in balance.accounts[transaction.sender]
 
 
+def validate_block(
+    block: blocks.Block, previous_hash: transacts.Hash, balance: Balance
+) -> Tuple[bool, Optional[transacts.Hash]]:
+    """ """
+    is_valid_header, current_hash = blocks.validate_header(block.header, previous_hash)
+
+    if not is_valid_header:
+        return False, None
+
+    for transaction in block.transactions:
+        is_valid_transaction = validate_transaction(balance, transaction)
+
+        if not is_valid_transaction:
+            return False, None
+
+    return True, current_hash
+
+
 def validate_blockchain(
     blockchain: blocks.Blockchain, balance: Optional[Balance] = None
 ) -> Tuple[bool, Optional[Balance]]:
@@ -97,16 +115,10 @@ def validate_blockchain(
 
     for block_hash in blockchain.chain[block_index + 1 :]:
         block = blockchain.blocks[block_hash]
-        is_valid_block, current_hash = blocks.validate_block(block, previous_hash)
+        is_valid_block, current_hash = validate_block(block, previous_hash, balance)
 
         if not is_valid_block:
             return False, None
-
-        for transaction in block.transactions:
-            is_valid_transaction = validate_transaction(balance, transaction)
-
-            if not is_valid_transaction:
-                return False, None
 
         assert current_hash is not None
         previous_hash = current_hash

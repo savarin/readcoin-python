@@ -26,7 +26,7 @@ def transfer(reward) -> transacts.Transaction:
 
 
 @pytest.fixture
-def merkle_root_with_1_transaction(reward) -> blocks.Hash:
+def merkle_root_with_1_transaction(reward) -> transacts.Hash:
     """ """
     merkle_tree = transacts.init_merkle_tree([hashlib.sha256(reward.encode()).digest()])
 
@@ -35,7 +35,7 @@ def merkle_root_with_1_transaction(reward) -> blocks.Hash:
 
 
 @pytest.fixture
-def merkle_root_with_2_transactions(reward, transfer) -> blocks.Hash:
+def merkle_root_with_2_transactions(reward, transfer) -> transacts.Hash:
     """ """
     merkle_tree = transacts.init_merkle_tree(
         [
