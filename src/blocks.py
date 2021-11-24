@@ -123,7 +123,7 @@ class Blockchain:
         return blockchain_bytes
 
 
-def iterate_message(blockchain_bytes: bytes) -> Generator:
+def iterate_blockchain(blockchain_bytes: bytes) -> Generator:
     """ """
     message_size = len(blockchain_bytes)
     byte_index = 0
@@ -143,7 +143,7 @@ def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
     chain: List[Hash] = []
     blocks: Dict[Hash, Block] = {}
 
-    for block_size, block_bytes in iterate_message(blockchain_bytes):
+    for block_size, block_bytes in iterate_blockchain(blockchain_bytes):
         if block_size is None:
             break
 
@@ -258,7 +258,7 @@ def replace_blockchain(
     for i, block_hash in enumerate(potential_blockchain.chain):
         current_chain = current_blockchain.chain
 
-        if not (i < len(current_chain) and block_hash == current_chain[i]):
+        if i == len(current_chain) or block_hash != current_chain[i]:
             break
 
         common_hash = block_hash

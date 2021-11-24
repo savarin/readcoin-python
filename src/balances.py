@@ -7,7 +7,7 @@ import blocks
 import transactions as transacts
 
 
-Account = DefaultDict[int, List[blocks.Hash]]
+Accounts = DefaultDict[int, List[blocks.Hash]]
 
 
 @dataclasses.dataclass
@@ -15,59 +15,50 @@ class Balance:
     """ """
 
     latest_hash: blocks.Hash
-    account: Account
+    accounts: Accounts
 
 
-def update_account_with_block(
-    account: Account, blockchain: blocks.Blockchain, block_hash: blocks.Hash
-) -> Account:
+def update_accounts(accounts: Accounts, block: blocks.Block) -> Accounts:
     """ """
-    block = blockchain.blocks[block_hash]
-
     for transaction in block.transactions:
         if transaction.sender != 0:
-            account[transaction.sender].remove(transaction.reference_hash)
+            accounts[transaction.sender].remove(transaction.reference_hash)
 
         reference_hash = hashlib.sha256(transaction.encode()).digest()
-        account[transaction.receiver].append(reference_hash)
+        accounts[transaction.receiver].append(reference_hash)
 
-    return account
+    return accounts
 
 
 def init_balance(blockchain: blocks.Blockchain) -> Balance:
     """ """
-    account: Account = collections.defaultdict(list)
+    accounts: Accounts = collections.defaultdict(list)
 
     for block_hash in blockchain.chain:
-        account = update_account_with_block(account, blockchain, block_hash)
+        block = blockchain.blocks[block_hash]
+        accounts = update_accounts(accounts, block)
 
-    return Balance(latest_hash=block_hash, account=account)
+    return Balance(latest_hash=block_hash, accounts=accounts)
 
 
-def update_balance_with_blockchain(
-    balance: Balance, blockchain: blocks.Blockchain
-) -> Tuple[bool, Optional[Balance]]:
+def update_balance(balance: Balance, block: blocks.Block) -> Balance:
     """ """
-    if balance.latest_hash not in blockchain.chain:
-        return False, None
+    block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
+    balance.latest_hash = block_hash
 
-    hash_index = blockchain.chain.index(balance.latest_hash)
-    account = balance.account
+    balance.accounts = update_accounts(balance.accounts, block)
 
-    for block_hash in blockchain.chain[hash_index + 1 :]:
-        account = update_account_with_block(account, blockchain, block_hash)
-
-    return True, balance
+    return balance
 
 
 def init_transfer(
     balance: Balance, sender: int, receiver: int
 ) -> Tuple[Optional[Balance], Optional[transacts.Transaction]]:
     """ """
-    if sender not in balance.account or len(balance.account[sender]) == 0:
+    if sender not in balance.accounts or len(balance.accounts[sender]) == 0:
         return None, None
 
-    reference_hash = balance.account[sender].pop(0)
+    reference_hash = balance.accounts[sender].pop(0)
     transaction = transacts.Transaction(
         reference_hash=reference_hash, sender=sender, receiver=receiver
     )
@@ -88,7 +79,7 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     if is_zero_reference != is_zero_sender:
         return False
 
-    if sender not in balance.account or len(balance.account[sender]) == 0:
+    if sender not in balance.accounts or len(balance.accounts[sender]) == 0:
         return False
 
-    return transaction.reference_hash in balance.account[transaction.sender]
+    return transaction.reference_hash in balance.accounts[transaction.sender]

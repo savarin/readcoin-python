@@ -65,38 +65,38 @@ def test_find_merkle_path():
 
     path_3 = transacts.find_merkle_path(tree_12, hash_1)
     assert len(path_3) == 3
-    assert path_3[0] == hash_12
+    assert path_3[0] == hash_1
     assert path_3[1] == hash_2
-    assert path_3[2] == hash_1
+    assert path_3[2] == hash_12
 
     path_4 = transacts.find_merkle_path(tree_12, hash_2)
     assert len(path_3) == 3
-    assert path_4[0] == hash_12
+    assert path_4[0] == hash_2
     assert path_4[1] == hash_1
-    assert path_4[2] == hash_2
+    assert path_4[2] == hash_12
 
     path_5 = transacts.find_merkle_path(tree_123, hash_3)
     assert len(path_5) == 3
-    assert path_5[0] == hash_123
+    assert path_5[0] == hash_3
     assert path_5[1] == hash_12
-    assert path_5[2] == hash_3
+    assert path_5[2] == hash_123
 
     path_6 = transacts.find_merkle_path(tree_123, hash_4)
     assert path_6 is None
 
     path_7 = transacts.find_merkle_path(tree_1234, hash_1)
     assert len(path_7) == 4
-    assert path_7[0] == hash_1234
-    assert path_7[1] == hash_34
-    assert path_7[2] == hash_2
-    assert path_7[3] == hash_1
+    assert path_7[0] == hash_1
+    assert path_7[1] == hash_2
+    assert path_7[2] == hash_34
+    assert path_7[3] == hash_1234
 
     path_8 = transacts.find_merkle_path(tree_1234, hash_4)
     assert len(path_8) == 4
-    assert path_8[0] == hash_1234
-    assert path_8[1] == hash_12
-    assert path_8[2] == hash_3
-    assert path_8[3] == hash_4
+    assert path_8[0] == hash_4
+    assert path_8[1] == hash_3
+    assert path_8[2] == hash_12
+    assert path_8[3] == hash_1234
 
     assert transacts.validate_merkle_path(path_1)
     assert not transacts.validate_merkle_path(path_2)

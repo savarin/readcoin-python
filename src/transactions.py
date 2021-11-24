@@ -105,7 +105,7 @@ def find_merkle_path(merkle_tree: Tree, transaction_hash: Hash) -> Optional[List
             if len(path) > 1:
                 path += [transaction_hash]
 
-            return path
+            return path[::-1]
 
         left = current_tree.left
         right = current_tree.right
@@ -128,8 +128,6 @@ def validate_merkle_path(path: Optional[List[Hash]]):
 
     if len(path) == 1:
         return True
-
-    path.reverse()
 
     root_hash = path.pop()
     candidate_tree = Tree(tree_hash=path[0], left=None, right=None)
