@@ -214,6 +214,21 @@ def run_proof_of_work(
     return True, nonce, guess.digest(), header
 
 
+def validate_block(block: Block, previous_hash: Hash) -> Tuple[bool, Optional[Hash]]:
+    """ """
+    header = block.header
+
+    if header.previous_hash != previous_hash:
+        return False, None
+
+    guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())
+
+    if guess.hexdigest()[:4] != "0000":
+        return False, None
+
+    return True, guess.digest()
+
+
 def validate_blockchain(
     blockchain: Blockchain, previous_hash: Optional[Hash] = None
 ) -> bool:
@@ -222,17 +237,13 @@ def validate_blockchain(
         previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
 
     for block_hash in blockchain.chain:
-        header = blockchain.blocks[block_hash].header
+        block = blockchain.blocks[block_hash]
 
-        if header.previous_hash != previous_hash:
+        assert previous_hash is not None
+        is_valid_block, previous_hash = validate_block(block, previous_hash)
+
+        if not is_valid_block:
             return False
-
-        guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())
-
-        if guess.hexdigest()[:4] != "0000":
-            return False
-
-        previous_hash = guess.digest()
 
     return True
 

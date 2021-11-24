@@ -107,16 +107,16 @@ def find_merkle_path(merkle_tree: Tree, transaction_hash: Hash) -> Optional[List
 
             return path
 
-        left_tree = current_tree.left
-        right_tree = current_tree.right
+        left = current_tree.left
+        right = current_tree.right
 
-        if left_tree is not None:
-            assert right_tree is not None
-            queue.append((path + [right_tree.tree_hash], left_tree))
+        if left is not None:
+            assert right is not None
+            queue.append((path + [right.tree_hash], left))
 
-        if right_tree is not None:
-            assert left_tree is not None
-            queue.append((path + [left_tree.tree_hash], right_tree))
+        if right is not None:
+            assert left is not None
+            queue.append((path + [left.tree_hash], right))
 
     return None
 
