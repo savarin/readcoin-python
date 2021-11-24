@@ -90,6 +90,18 @@ class Block:
         )
 
 
+def decode_block(block_bytes: bytes) -> Block:
+    """ """
+    header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
+    transaction_counter = int.from_bytes(block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big")
+    transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
+
+    header = decode_header(header_bytes)
+    transactions = transacts.decode_transactions(transaction_counter, transactions_bytes)
+
+    return Block(header=header, transactions=transactions)
+
+
 @dataclasses.dataclass
 class Blockchain:
     """ """
@@ -107,43 +119,32 @@ class Blockchain:
         return blockchain_bytes
 
 
-def iterate_message(message: bytes) -> Generator:
+def iterate_message(blockchain_bytes: bytes) -> Generator:
     """ """
-    message_size = len(message)
+    message_size = len(blockchain_bytes)
     byte_index = 0
 
     while True:
         if byte_index == message_size:
             yield None, None
 
-        block_size = message[byte_index]
-        yield block_size, message[byte_index : byte_index + block_size]
+        block_size = blockchain_bytes[byte_index]
+        yield block_size, blockchain_bytes[byte_index : byte_index + block_size]
 
         byte_index += block_size
 
 
-def decode_message(message: bytes) -> Blockchain:
+def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
     """ """
     chain: List[Hash] = []
     blocks: Dict[Hash, Block] = {}
 
-    for block_size, block_bytes in iterate_message(message):
+    for block_size, block_bytes in iterate_message(blockchain_bytes):
         if block_size is None:
             break
 
-        header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
-        transaction_counter = int.from_bytes(
-            block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
-        )
-        transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
-
-        header = decode_header(header_bytes)
-        transactions = transacts.decode_transactions(
-            transaction_counter, transactions_bytes
-        )
-
-        block = Block(header=header, transactions=transactions)
-        block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+        block = decode_block(block_bytes)
+        block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
 
         chain.append(block_hash)
         blocks[block_hash] = block
