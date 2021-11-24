@@ -93,11 +93,15 @@ class Block:
 def decode_block(block_bytes: bytes) -> Block:
     """ """
     header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
-    transaction_counter = int.from_bytes(block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big")
+    transaction_counter = int.from_bytes(
+        block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+    )
     transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
 
     header = decode_header(header_bytes)
-    transactions = transacts.decode_transactions(transaction_counter, transactions_bytes)
+    transactions = transacts.decode_transactions(
+        transaction_counter, transactions_bytes
+    )
 
     return Block(header=header, transactions=transactions)
 
@@ -144,7 +148,8 @@ def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
             break
 
         block = decode_block(block_bytes)
-        block_hash = hashlib.sha256(hashlib.sha256(block.header.encode()).digest()).digest()
+        header = block.header
+        block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
 
         chain.append(block_hash)
         blocks[block_hash] = block
@@ -240,10 +245,9 @@ def replace_blockchain(
         return False
 
     for i, block_hash in enumerate(potential_blockchain.chain):
-        if not (
-            i < len(current_blockchain.chain)
-            and block_hash == current_blockchain.chain[i]
-        ):
+        current_chain = current_blockchain.chain
+
+        if not (i < len(current_chain) and block_hash == current_chain[i]):
             break
 
         common_hash = block_hash
