@@ -9,7 +9,6 @@ import dotenv
 
 import balances
 import blocks
-import helpers
 import transactions as transacts
 
 
@@ -17,6 +16,13 @@ dotenv.load_dotenv()
 
 NODE_IP = os.getenv("NODE_IP")
 NODE_PORTS = [7000, 8000, 9000]
+
+
+def bind_socket(ip_address: str, port: int) -> socket.socket:
+    """ """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip_address, port))
+    return sock
 
 
 @dataclasses.dataclass
@@ -32,7 +38,7 @@ class Node:
 def init_node(port: int) -> Node:
     """ """
     assert NODE_IP is not None
-    sock = helpers.bind_socket(NODE_IP, port)
+    sock = bind_socket(NODE_IP, port)
 
     blockchain = blocks.init_blockchain()
     balance = balances.init_balance(blockchain)

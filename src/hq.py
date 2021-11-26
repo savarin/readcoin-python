@@ -4,7 +4,7 @@ import socket
 
 import dotenv
 
-import helpers
+import node
 
 
 dotenv.load_dotenv()
@@ -13,7 +13,6 @@ HQ_IP = os.getenv("HQ_IP")
 HQ_PORT = 6000
 
 NODE_IP = os.getenv("NODE_IP")
-NODE_PORTS = [7000, 8000, 9000]
 
 
 @dataclasses.dataclass
@@ -27,7 +26,7 @@ class HQ:
 def init_hq(port: int) -> HQ:
     """ """
     assert HQ_IP is not None
-    sock = helpers.bind_socket(HQ_IP, HQ_PORT)
+    sock = node.bind_socket(HQ_IP, HQ_PORT)
 
     return HQ(port=port, sock=sock)
 
@@ -35,11 +34,16 @@ def init_hq(port: int) -> HQ:
 def run(hq: HQ):
     """ """
     while True:
-        message = bytes.fromhex(input("> "))
+        try:
+            message = bytes.fromhex(input("> "))
+        except ValueError:
+            print("Please specify message as a hexadecimal string.")
+            continue
+
         print(message)
 
         assert NODE_IP is not None
-        for node_port in NODE_PORTS:
+        for node_port in node.NODE_PORTS:
             hq.sock.sendto(message, (NODE_IP, node_port))
 
 
