@@ -31,7 +31,7 @@ def verify(
     return True
 
 
-def save_key_pair(
+def save_keys(
     public_key: ec.EllipticCurvePublicKey,
     private_key: ec.EllipticCurvePrivateKey,
     name_prefix: str = "",
@@ -61,7 +61,7 @@ def save_key_pair(
         f.write(serialized_private)
 
 
-def load_key_pair(
+def load_keys(
     name_prefix: str = "", require_password: bool = True
 ) -> Tuple[ec.EllipticCurvePublicKey, ec.EllipticCurvePrivateKey]:
     """ """
@@ -112,3 +112,24 @@ def init_account(port: int) -> Account:
     return Account(
         address=address, port=port, public_key=public_key, private_key=private_key
     )
+
+
+def save_attributes_for_demo(account: Account):
+    """ """
+    name_prefix = f"{bytes.hex(account.address)}-{str(account.port)}-"
+    breakpoint()
+    save_keys(account.public_key, account.private_key, name_prefix, require_password=False)
+
+
+if __name__ == "__main__":
+    for port in [7000, 8000, 9000]:
+        account = Account(port=port)
+        save_attributes_for_demo(account)
+
+
+    # private_key = ec.generate_private_key(ec.SECP256K1())
+    # public_key = private_key.public_key()
+
+    # save_keys(public_key, private_key, "", True)
+    # a, b = load_keys("", True)
+
