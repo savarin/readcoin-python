@@ -39,14 +39,12 @@ def decode_header(header_bytes: bytes) -> Header:
     """ """
     version = header_bytes[0]
     previous_hash = header_bytes[1 : 1 + HASH_SIZE]
-    merkle_root = header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE]
+    merkle_root = header_bytes[1 + HASH_SIZE : 1 + 2 * HASH_SIZE]
     timestamp = int.from_bytes(
-        header_bytes[1 + HASH_SIZE + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE + 4],
+        header_bytes[1 + 2 * HASH_SIZE : 1 + 2 * HASH_SIZE + 4],
         byteorder="big",
     )
-    nonce = int.from_bytes(
-        header_bytes[1 + HASH_SIZE + HASH_SIZE + 4 :], byteorder="big"
-    )
+    nonce = int.from_bytes(header_bytes[1 + 2 * HASH_SIZE + 4 :], byteorder="big")
 
     return Header(
         version=version,
@@ -222,15 +220,15 @@ def run_proof_of_work(
 
 
 def validate_header(
-    header: Header, previous_hash: transacts.Hash
-) -> Tuple[bool, Optional[transacts.Hash]]:
+    header: Header, previous_hash: transacts.Hash, previous_timestamp: int
+) -> Tuple[bool, Optional[transacts.Hash], Optional[int]]:
     """ """
-    if header.previous_hash != previous_hash:
-        return False, None
+    if header.previous_hash != previous_hash or header.timestamp < previous_timestamp:
+        return False, None, None
 
     guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())
 
     if guess.hexdigest()[:4] != "0000":
-        return False, None
+        return False, None, None
 
-    return True, guess.digest()
+    return True, guess.digest(), header.timestamp

@@ -88,7 +88,7 @@ def load_keys(
 
 
 @dataclasses.dataclass
-class Account:
+class Wallet:
     """ """
 
     address: bytes
@@ -97,7 +97,7 @@ class Account:
     private_key: ec.EllipticCurvePrivateKey
 
 
-def init_account(port: int) -> Account:
+def init_wallet(port: int) -> Wallet:
     """ """
     private_key = ec.generate_private_key(curve=ec.SECP256K1())
     public_key = private_key.public_key()
@@ -109,27 +109,19 @@ def init_account(port: int) -> Account:
         )
     ).digest()
 
-    return Account(
+    return Wallet(
         address=address, port=port, public_key=public_key, private_key=private_key
     )
 
 
-def save_attributes_for_demo(account: Account):
+def setup_demo():
     """ """
-    name_prefix = f"{bytes.hex(account.address)}-{str(account.port)}-"
-    breakpoint()
-    save_keys(account.public_key, account.private_key, name_prefix, require_password=False)
+    for port in [7000, 8000, 9000]:
+        wallet = init_wallet(port=port)
+
+        name_prefix = str(port) + "-"
+        save_keys(wallet.public_key, wallet.private_key, name_prefix, False)
 
 
 if __name__ == "__main__":
-    for port in [7000, 8000, 9000]:
-        account = Account(port=port)
-        save_attributes_for_demo(account)
-
-
-    # private_key = ec.generate_private_key(ec.SECP256K1())
-    # public_key = private_key.public_key()
-
-    # save_keys(public_key, private_key, "", True)
-    # a, b = load_keys("", True)
-
+    setup_demo()

@@ -86,21 +86,26 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
 
 
 def validate_block(
-    block: blocks.Block, previous_hash: transacts.Hash, balance: Balance
-) -> Tuple[bool, Optional[transacts.Hash]]:
+    block: blocks.Block,
+    previous_hash: transacts.Hash,
+    previous_timestamp: int,
+    balance: Balance,
+) -> Tuple[bool, Optional[transacts.Hash], Optional[int]]:
     """ """
-    is_valid_header, current_hash = blocks.validate_header(block.header, previous_hash)
+    is_valid_header, current_hash, current_timestamp = blocks.validate_header(
+        block.header, previous_hash, previous_timestamp
+    )
 
     if not is_valid_header:
-        return False, None
+        return False, None, None
 
     for transaction in block.transactions:
         is_valid_transaction = validate_transaction(balance, transaction)
 
         if not is_valid_transaction:
-            return False, None
+            return False, None, None
 
-    return True, current_hash
+    return True, current_hash, current_timestamp
 
 
 def validate_blockchain(
@@ -113,15 +118,22 @@ def validate_blockchain(
     previous_hash = balance.latest_hash
     block_index = blockchain.chain.index(previous_hash)
 
+    previous_block = blockchain.blocks[blockchain.chain[block_index - 1]]
+    previous_timestamp = previous_block.header.timestamp
+
     for block_hash in blockchain.chain[block_index + 1 :]:
         block = blockchain.blocks[block_hash]
-        is_valid_block, current_hash = validate_block(block, previous_hash, balance)
+        is_valid_block, current_hash, current_timestamp = validate_block(
+            block, previous_hash, previous_timestamp, balance
+        )
 
         if not is_valid_block:
             return False, None
 
-        assert current_hash is not None
+        assert current_hash is not None and current_timestamp is not None
         previous_hash = current_hash
+        previous_timestamp = current_timestamp
+
         balance = update_balance(balance, block)
 
     return True, balance
