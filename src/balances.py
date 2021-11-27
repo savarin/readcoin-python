@@ -19,14 +19,14 @@ class Balance:
     """ """
 
     latest_hash: transacts.Hash
-    keychain: Keychain
+    keychain: Optional[Keychain]
     accounts: Accounts
 
 
 def update_accounts(accounts: Accounts, block: blocks.Block) -> Accounts:
     """ """
     for transaction in block.transactions:
-        if transaction.sender != 0:
+        if transaction.sender != transacts.REWARD_SENDER:
             accounts[transaction.sender].remove(transaction.reference_hash)
 
         reference_hash = hashlib.sha256(transaction.encode()).digest()
@@ -35,7 +35,9 @@ def update_accounts(accounts: Accounts, block: blocks.Block) -> Accounts:
     return accounts
 
 
-def init_balance(blockchain: blocks.Blockchain, keychain: Keychain) -> Balance:
+def init_balance(
+    blockchain: blocks.Blockchain, keychain: Optional[Keychain] = None
+) -> Balance:
     """ """
     accounts: Accounts = collections.defaultdict(list)
 
@@ -65,7 +67,10 @@ def init_transfer(
 
     reference_hash = balance.accounts[sender].pop(0)
     transaction = transacts.Transaction(
-        reference_hash=reference_hash, sender=sender, receiver=receiver, signature=signature
+        reference_hash=reference_hash,
+        sender=sender,
+        receiver=receiver,
+        signature=signature,
     )
 
     return balance, transaction
@@ -75,20 +80,21 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     """ """
     sender = transaction.sender
 
-    is_zero_reference = transaction.reference_hash == transacts.REWARD_HASH
-    is_zero_sender = sender == 0
-
-    if is_zero_reference and is_zero_sender:
-        return True
-
-    if is_zero_reference != is_zero_sender:
-        return False
+    if sender == transacts.REWARD_SENDER:
+        return transacts.validate_reward(transaction)
 
     if sender not in balance.accounts or len(balance.accounts[sender]) == 0:
         return False
 
+    if balance.keychain is None:
+        return False
+
     is_not_spent = transaction.reference_hash in balance.accounts[transaction.sender]
-    is_valid_signature = crypto.verify(transaction.signature, balance.keychain[sender], transaction.reference_hash + transaction.receiver)
+    is_valid_signature = crypto.verify(
+        transaction.signature,
+        balance.keychain[sender],
+        transaction.reference_hash + transaction.receiver,
+    )
 
     return is_not_spent and is_valid_signature
 
@@ -117,12 +123,9 @@ def validate_block(
 
 
 def validate_blockchain(
-    blockchain: blocks.Blockchain, balance: Optional[Balance] = None
+    blockchain: blocks.Blockchain, balance: Balance
 ) -> Tuple[bool, Optional[Balance]]:
     """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
-    if balance is None:
-        balance = init_balance(blocks.init_blockchain())
-
     previous_hash = balance.latest_hash
     block_index = blockchain.chain.index(previous_hash)
 
@@ -150,7 +153,8 @@ def validate_blockchain(
 def replace_blockchain(
     potential_blockchain: blocks.Blockchain,
     current_blockchain: blocks.Blockchain,
-    balance: Optional[Balance] = None,
+    current_balance: Optional[Balance] = None,
+    keychain: Optional[Keychain] = None,
 ) -> Tuple[bool, Optional[Balance]]:
     """Compare blockchains and replace if potential blockchain is longer and valid."""
     current_chain = current_blockchain.chain
@@ -162,10 +166,17 @@ def replace_blockchain(
         if i == len(current_chain) or block_hash != current_chain[i]:
             break
 
-    if balance is not None:
-        latest_index = current_chain.index(balance.latest_hash)
+    if current_balance is not None:
+        latest_index = current_chain.index(current_balance.latest_hash)
 
         if latest_index <= i:
-            return validate_blockchain(potential_blockchain, balance)
+            return validate_blockchain(potential_blockchain, current_balance)
 
-    return validate_blockchain(potential_blockchain, None)
+    assert keychain is not None
+    genesis_chain = current_blockchain.chain[:1]
+    genesis_blockchain = blocks.Blockchain(
+        chain=genesis_chain, blocks=current_blockchain.blocks
+    )
+    genesis_balance = init_balance(genesis_blockchain, keychain)
+
+    return validate_blockchain(potential_blockchain, genesis_balance)

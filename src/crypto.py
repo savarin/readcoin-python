@@ -158,7 +158,3 @@ def load_demo_wallets() -> Dict[int, Wallet]:
         wallets[port] = wallet
 
     return wallets
-
-
-if __name__ == "__main__":
-    init_demo_wallets(True)
