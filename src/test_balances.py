@@ -219,12 +219,14 @@ def test_replace_blockchain(
     keychain, blockchain_with_1_block, blockchain_with_2_blocks
 ):
     """ """
-    is_valid_blockchain, _ = balances.replace_blockchain(
-        blockchain_with_2_blocks, blockchain_with_1_block, None, keychain
-    )
-    assert is_valid_blockchain
+    balance = balances.init_balance(blockchain_with_1_block, keychain)
 
-    is_valid_blockchain, _ = balances.replace_blockchain(
-        blockchain_with_1_block, blockchain_with_1_block, None, keychain
+    is_valid_replace, _ = balances.replace_blockchain(
+        blockchain_with_2_blocks, blockchain_with_1_block, balance
     )
-    assert not is_valid_blockchain
+    assert is_valid_replace
+
+    is_valid_replace, _ = balances.replace_blockchain(
+        blockchain_with_1_block, blockchain_with_1_block, balance
+    )
+    assert not is_valid_replace

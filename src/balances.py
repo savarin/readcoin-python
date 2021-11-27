@@ -153,8 +153,7 @@ def validate_blockchain(
 def replace_blockchain(
     potential_blockchain: blocks.Blockchain,
     current_blockchain: blocks.Blockchain,
-    current_balance: Optional[Balance] = None,
-    keychain: Optional[Keychain] = None,
+    current_balance: Balance,
 ) -> Tuple[bool, Optional[Balance]]:
     """Compare blockchains and replace if potential blockchain is longer and valid."""
     current_chain = current_blockchain.chain
@@ -166,17 +165,15 @@ def replace_blockchain(
         if i == len(current_chain) or block_hash != current_chain[i]:
             break
 
-    if current_balance is not None:
-        latest_index = current_chain.index(current_balance.latest_hash)
+    latest_index = current_chain.index(current_balance.latest_hash)
 
-        if latest_index <= i:
-            return validate_blockchain(potential_blockchain, current_balance)
+    if latest_index <= i:
+        return validate_blockchain(potential_blockchain, current_balance)
 
-    assert keychain is not None
     genesis_chain = current_blockchain.chain[:1]
     genesis_blockchain = blocks.Blockchain(
         chain=genesis_chain, blocks=current_blockchain.blocks
     )
-    genesis_balance = init_balance(genesis_blockchain, keychain)
+    genesis_balance = init_balance(genesis_blockchain, current_balance.keychain)
 
     return validate_blockchain(potential_blockchain, genesis_balance)
