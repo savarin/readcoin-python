@@ -86,7 +86,7 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     if sender not in balance.accounts or len(balance.accounts[sender]) == 0:
         return False
 
-    if balance.keychain is None:
+    if balance.keychain is None or sender not in balance.keychain:
         return False
 
     is_not_spent = transaction.reference_hash in balance.accounts[transaction.sender]

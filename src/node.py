@@ -9,6 +9,7 @@ import dotenv
 
 import balances
 import blocks
+import crypto
 import transactions as transacts
 
 
@@ -29,6 +30,7 @@ def bind_socket(ip_address: str, port: int) -> socket.socket:
 class Node:
     """ """
 
+    address: transacts.Hash
     port: int
     sock: socket.socket
     blockchain: blocks.Blockchain
@@ -40,10 +42,16 @@ def init_node(port: int) -> Node:
     assert NODE_IP is not None
     sock = bind_socket(NODE_IP, port)
 
-    blockchain = blocks.init_blockchain()
-    balance = balances.init_balance(blockchain)
+    wallets = crypto.load_demo_wallets()
+    address = wallets[port].address
+    keychain = {wallet.address: wallet.public_key for _, wallet in wallets.items()}
 
-    return Node(port=port, sock=sock, blockchain=blockchain, balance=balance)
+    blockchain = blocks.init_blockchain(wallets[7000].address)
+    balance = balances.init_balance(blockchain, keychain)
+
+    return Node(
+        address=address, port=port, sock=sock, blockchain=blockchain, balance=balance
+    )
 
 
 def broadcast(node: Node, message: bytes):
@@ -65,14 +73,14 @@ def run(node: Node):
         try:
             # Listen for incoming messages, with maximum size set at OS X maximum UDP package size
             # of 9216 bytes.
-            node.sock.settimeout(1)
+            node.sock.settimeout(0.1)
             message, _ = node.sock.recvfrom(9216)
 
             # Decode message and check blockchain is valid.
             blockchain = blocks.decode_blockchain(message)
 
             is_valid_blockchain, balance = balances.replace_blockchain(
-                blockchain, node.blockchain
+                blockchain, node.blockchain, node.balance
             )
 
             if not is_valid_blockchain:
@@ -97,9 +105,10 @@ def run(node: Node):
 
         except socket.timeout:
             reward = transacts.Transaction(
-                reference_hash=blocks.REWARD_HASH,
-                sender=blocks.REWARD_SENDER,
-                receiver=node.port,
+                reference_hash=transacts.REWARD_HASH,
+                sender=transacts.REWARD_SENDER,
+                receiver=node.address,
+                signature=transacts.REWARD_SIGNATURE,
             )
             merkle_root = hashlib.sha256(reward.encode()).digest()
 
