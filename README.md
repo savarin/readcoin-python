@@ -4,8 +4,8 @@ Minimal implementation of the Bitcoin protocol for educational purposes.
 
 ## Context
 
-The latest version implements mining, blockchain validation (block hashes form a chain and satisfy
-proof-of-work) and transaction validation (sender in receipt of token and has not been spent). For
+The latest version implements mining, header validation (block hashes form a chain and satisfy
+proof-of-work) and transaction validation (sender has not been spent token and signature is valid). For
 simplicity, difficulty is set at a constant and each token is indivisible.
 
 We implement the Bitcoin protocol through multiple iterations:
@@ -16,20 +16,20 @@ starting point of mining and header validation only, each block as a bytestring.
 include blockchain class implementation with encode/decode semantics.
 * [v3](https://github.com/savarin/readcoin/tree/v3) -
 include Merkle tree and transaction validation.
-* [v4](https://github.com/savarin/readcoin/tree/main) -
+* [v4](https://github.com/savarin/readcoin/tree/v4) -
 include balances and full block validation.
+* [v5](https://github.com/savarin/readcoin/tree/main) -
+include elliptic curve signature and verification.
 
 The term readcoin refers to a blog by the author on readcoin.com (no longer operational). The first
 article can be found [here](https://gist.github.com/savarin/c71c1e4dfa4edf3b13bf36ccd8f6de17).
 
-Future plans include cryptographic signing of transactions.
-
 ## Installation
 
-Running the code requires a single import.
+Running the code requires two imports.
 
 ```shell
-pip install python-dotenv
+pip install python-dotenv cryptography
 ```
 
 The environment variable `NODE_IP` needs to be set up as messages are sent via UDP.
