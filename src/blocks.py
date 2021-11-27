@@ -7,11 +7,7 @@ import transactions as transacts
 
 VERSION: int = 0
 
-HASH_SIZE: int = 32
-HEADER_SIZE: int = 101
-
-REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
-REWARD_SENDER: int = 0
+HEADER_SIZE: int = 101  # i.e. 1 + 32 + 32 + 4 + 32
 
 
 @dataclasses.dataclass
@@ -38,13 +34,15 @@ class Header:
 def decode_header(header_bytes: bytes) -> Header:
     """ """
     version = header_bytes[0]
-    previous_hash = header_bytes[1 : 1 + HASH_SIZE]
-    merkle_root = header_bytes[1 + HASH_SIZE : 1 + 2 * HASH_SIZE]
+    previous_hash = header_bytes[1 : 1 + transacts.HASH_SIZE]
+    merkle_root = header_bytes[1 + transacts.HASH_SIZE : 1 + 2 * transacts.HASH_SIZE]
     timestamp = int.from_bytes(
-        header_bytes[1 + 2 * HASH_SIZE : 1 + 2 * HASH_SIZE + 4],
+        header_bytes[1 + 2 * transacts.HASH_SIZE : 1 + 2 * transacts.HASH_SIZE + 4],
         byteorder="big",
     )
-    nonce = int.from_bytes(header_bytes[1 + 2 * HASH_SIZE + 4 :], byteorder="big")
+    nonce = int.from_bytes(
+        header_bytes[1 + 2 * transacts.HASH_SIZE + 4 :], byteorder="big"
+    )
 
     return Header(
         version=version,
@@ -70,15 +68,16 @@ class Block:
             transactions_bytes += transaction.encode()
 
         transaction_counter_bytes = len(self.transactions).to_bytes(1, byteorder="big")
+
         block_size = (
-            1
+            2
             + len(header_bytes)
             + len(transaction_counter_bytes)
             + len(transactions_bytes)
         )
 
         return (
-            block_size.to_bytes(1, byteorder="big")
+            block_size.to_bytes(2, byteorder="big")
             + header_bytes
             + transaction_counter_bytes
             + transactions_bytes
@@ -87,11 +86,11 @@ class Block:
 
 def decode_block(block_bytes: bytes) -> Block:
     """ """
-    header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
+    header_bytes = block_bytes[2 : 2 + HEADER_SIZE]
     transaction_counter = int.from_bytes(
-        block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+        block_bytes[2 + HEADER_SIZE : 2 + HEADER_SIZE + 1], byteorder="big"
     )
-    transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
+    transactions_bytes = block_bytes[2 + HEADER_SIZE + 1 :]
 
     header = decode_header(header_bytes)
     transactions = transacts.decode_transactions(
@@ -125,12 +124,16 @@ def iterate_blockchain(blockchain_bytes: bytes) -> Generator:
 
     while True:
         if byte_index == message_size:
-            yield None, None
+            break
 
-        block_size = blockchain_bytes[byte_index]
+        block_size = int.from_bytes(
+            blockchain_bytes[byte_index : byte_index + 2], byteorder="big"
+        )
         yield block_size, blockchain_bytes[byte_index : byte_index + block_size]
 
         byte_index += block_size
+
+    yield None, None
 
 
 def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
@@ -152,22 +155,22 @@ def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
     return Blockchain(chain=chain, blocks=blocks)
 
 
-def init_genesis_block() -> Block:
+def init_genesis_block(receiver: transacts.Hash) -> Block:
     """ """
-    reward = transacts.Transaction(reference_hash=REWARD_HASH, sender=0, receiver=7000)
+    reward = transacts.init_reward(receiver)
     transaction_hash = hashlib.sha256(reward.encode()).digest()
     merkle_tree = transacts.init_merkle_tree([transaction_hash])
 
     assert merkle_tree is not None
     merkle_root = merkle_tree.tree_hash
 
-    previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
+    previous_hash = (0).to_bytes(transacts.HASH_SIZE, byteorder="big")
     header = Header(
         version=VERSION,
         previous_hash=previous_hash,
         merkle_root=merkle_root,
         timestamp=1634700000,
-        nonce=102275,
+        nonce=82822,
     )
 
     guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())
@@ -176,12 +179,12 @@ def init_genesis_block() -> Block:
     return Block(header=header, transactions=[reward])
 
 
-def init_blockchain() -> Blockchain:
+def init_blockchain(receiver: transacts.Hash) -> Blockchain:
     """ """
-    genesis_block = init_genesis_block()
-    genesis_hash = hashlib.sha256(
-        hashlib.sha256(genesis_block.header.encode()).digest()
-    ).digest()
+    genesis_block = init_genesis_block(receiver)
+
+    header = genesis_block.header
+    genesis_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
 
     return Blockchain(chain=[genesis_hash], blocks={genesis_hash: genesis_block})
 

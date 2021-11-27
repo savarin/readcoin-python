@@ -7,7 +7,12 @@ Hash = bytes
 
 
 HASH_SIZE: int = 32
-TRANSACTION_SIZE: int = 36
+SIGNATURE_SIZE: int = 72
+TRANSACTION_SIZE: int = 168  # i.e. 32 * 3 + 72
+
+REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
+REWARD_SENDER: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
+REWARD_SIGNATURE: bytes = (0).to_bytes(SIGNATURE_SIZE, byteorder="big")
 
 
 @dataclasses.dataclass
@@ -15,27 +20,28 @@ class Transaction:
     """ """
 
     reference_hash: Hash
-    sender: int
-    receiver: int
+    sender: Hash
+    receiver: Hash
+    signature: bytes
 
     def encode(self):
         """ """
-        return (
-            self.reference_hash
-            + self.sender.to_bytes(2, byteorder="big")
-            + self.receiver.to_bytes(2, byteorder="big")
-        )
+        return self.reference_hash + self.sender + self.receiver + self.signature
 
 
 def decode_transaction(transaction_bytes: bytes) -> Transaction:
     """ """
     reference_hash = transaction_bytes[:HASH_SIZE]
-    sender = int.from_bytes(
-        transaction_bytes[HASH_SIZE : HASH_SIZE + 2], byteorder="big"
-    )
-    receiver = int.from_bytes(transaction_bytes[HASH_SIZE + 2 :], byteorder="big")
+    sender = transaction_bytes[HASH_SIZE : 2 * HASH_SIZE]
+    receiver = transaction_bytes[2 * HASH_SIZE : 3 * HASH_SIZE]
+    signature = transaction_bytes[3 * HASH_SIZE :]
 
-    return Transaction(reference_hash=reference_hash, sender=sender, receiver=receiver)
+    return Transaction(
+        reference_hash=reference_hash,
+        sender=sender,
+        receiver=receiver,
+        signature=signature,
+    )
 
 
 def decode_transactions(
@@ -55,11 +61,30 @@ def decode_transactions(
     return transactions
 
 
+def init_reward(receiver: Hash) -> Transaction:
+    """ """
+    return Transaction(
+        reference_hash=REWARD_HASH,
+        sender=REWARD_SENDER,
+        receiver=receiver,
+        signature=REWARD_SIGNATURE,
+    )
+
+
+def validate_reward(reward: Transaction) -> bool:
+    """ """
+    is_valid_hash = reward.reference_hash == REWARD_HASH
+    is_valid_sender = reward.sender == REWARD_SENDER
+    is_valid_signature = reward.signature == REWARD_SIGNATURE
+
+    return is_valid_hash and is_valid_sender and is_valid_signature
+
+
 @dataclasses.dataclass
 class Tree:
     """ """
 
-    tree_hash: bytes
+    tree_hash: Hash
     left: Optional["Tree"]
     right: Optional["Tree"]
 
@@ -96,7 +121,7 @@ def init_merkle_tree(transaction_hashes: List[Hash]) -> Optional[Tree]:
 
 def find_merkle_path(merkle_tree: Tree, transaction_hash: Hash) -> Optional[List[Hash]]:
     """ """
-    queue: List[Tuple[List[bytes], Tree]] = [([merkle_tree.tree_hash], merkle_tree)]
+    queue: List[Tuple[List[Hash], Tree]] = [([merkle_tree.tree_hash], merkle_tree)]
 
     while queue:
         path, current_tree = queue.pop(0)

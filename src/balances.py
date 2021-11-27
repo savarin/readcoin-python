@@ -1,13 +1,17 @@
-from typing import DefaultDict, List, Optional, Tuple
+from typing import Dict, DefaultDict, List, Optional, Tuple
 import collections
 import dataclasses
 import hashlib
 
+from cryptography.hazmat.primitives.asymmetric import ec
+
 import blocks
+import crypto
 import transactions as transacts
 
 
-Accounts = DefaultDict[int, List[transacts.Hash]]
+Keychain = Dict[transacts.Hash, ec.EllipticCurvePublicKey]
+Accounts = DefaultDict[transacts.Hash, List[transacts.Hash]]
 
 
 @dataclasses.dataclass
@@ -15,6 +19,7 @@ class Balance:
     """ """
 
     latest_hash: transacts.Hash
+    keychain: Keychain
     accounts: Accounts
 
 
@@ -30,7 +35,7 @@ def update_accounts(accounts: Accounts, block: blocks.Block) -> Accounts:
     return accounts
 
 
-def init_balance(blockchain: blocks.Blockchain) -> Balance:
+def init_balance(blockchain: blocks.Blockchain, keychain: Keychain) -> Balance:
     """ """
     accounts: Accounts = collections.defaultdict(list)
 
@@ -38,7 +43,7 @@ def init_balance(blockchain: blocks.Blockchain) -> Balance:
         block = blockchain.blocks[block_hash]
         accounts = update_accounts(accounts, block)
 
-    return Balance(latest_hash=block_hash, accounts=accounts)
+    return Balance(latest_hash=block_hash, keychain=keychain, accounts=accounts)
 
 
 def update_balance(balance: Balance, block: blocks.Block) -> Balance:
@@ -52,7 +57,7 @@ def update_balance(balance: Balance, block: blocks.Block) -> Balance:
 
 
 def init_transfer(
-    balance: Balance, sender: int, receiver: int
+    balance: Balance, sender: transacts.Hash, receiver: transacts.Hash, signature: bytes
 ) -> Tuple[Optional[Balance], Optional[transacts.Transaction]]:
     """ """
     if sender not in balance.accounts or len(balance.accounts[sender]) == 0:
@@ -60,7 +65,7 @@ def init_transfer(
 
     reference_hash = balance.accounts[sender].pop(0)
     transaction = transacts.Transaction(
-        reference_hash=reference_hash, sender=sender, receiver=receiver
+        reference_hash=reference_hash, sender=sender, receiver=receiver, signature=signature
     )
 
     return balance, transaction
@@ -70,7 +75,7 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     """ """
     sender = transaction.sender
 
-    is_zero_reference = transaction.reference_hash == blocks.REWARD_HASH
+    is_zero_reference = transaction.reference_hash == transacts.REWARD_HASH
     is_zero_sender = sender == 0
 
     if is_zero_reference and is_zero_sender:
@@ -82,7 +87,10 @@ def validate_transaction(balance: Balance, transaction: transacts.Transaction) -
     if sender not in balance.accounts or len(balance.accounts[sender]) == 0:
         return False
 
-    return transaction.reference_hash in balance.accounts[transaction.sender]
+    is_not_spent = transaction.reference_hash in balance.accounts[transaction.sender]
+    is_valid_signature = crypto.verify(transaction.signature, balance.keychain[sender], transaction.reference_hash + transaction.receiver)
+
+    return is_not_spent and is_valid_signature
 
 
 def validate_block(
