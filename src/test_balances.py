@@ -66,7 +66,7 @@ def blockchain_with_2_blocks(
         previous_hash=blockchain.chain[0],
         merkle_root=merkle_root_with_2_transactions,
         timestamp=1634700600,
-        nonce=22025,
+        nonce=14558,
     )
 
     block = blocks.Block(header=header, transactions=[reward, transfer])
@@ -84,7 +84,7 @@ def test_init_balance(blockchain_with_1_block, blockchain_with_2_blocks):
 
     assert (
         bytes.hex(balance.latest_hash)
-        == "0000e07d18285944711e785cfa7aa96443ddc9a4dfacce935d3bbc9793181ad6"
+        == "0000750f8d91e53b2f3ed764518c77c4bc50cd53c014bbe4bf5aaf89009b7d25"
     )
     assert len(balance.accounts) == 1
 
@@ -100,7 +100,7 @@ def test_init_balance(blockchain_with_1_block, blockchain_with_2_blocks):
 
     assert (
         bytes.hex(balance.latest_hash)
-        == "00005b938d4fcaa18d0ccc4792100c5bcea26e0b56faec2334c8ea9d530c527e"
+        == "000075c4d199b464a8a9907f54bf6e20057978db79797867cbbe8d553854b8b4"
     )
     assert len(balance.accounts) == 2
 
@@ -160,7 +160,7 @@ def test_validate_blockchain(
         (0).to_bytes(32, byteorder="big"),
         merkle_root_with_1_transaction,
         1634701200,
-        83000,
+        174000,
         1000,
     )
 

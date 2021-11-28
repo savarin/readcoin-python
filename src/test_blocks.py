@@ -92,18 +92,18 @@ def test_proof_of_work(merkle_root_with_1_transaction, merkle_root_with_2_transa
     assert header is None
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, merkle_root_with_1_transaction, timestamp, 102000, 1000
+        previous_hash, merkle_root_with_1_transaction, timestamp, 54000, 1000
     )
 
     assert is_new_block
-    assert nonce == 102275
+    assert nonce == 54026
     assert (
         bytes.hex(block_hash)
-        == "0000e07d18285944711e785cfa7aa96443ddc9a4dfacce935d3bbc9793181ad6"
+        == "0000750f8d91e53b2f3ed764518c77c4bc50cd53c014bbe4bf5aaf89009b7d25"
     )
     assert (
         bytes.hex(header.encode())
-        == "000000000000000000000000000000000000000000000000000000000000000000281d8712b36b4365bd09fe91de46e78b69d5d4ecf078252eb35b2cbbb24ba057616f8ae00000000000000000000000000000000000000000000000000000000000018f83"
+        == "010000000000000000000000000000000000000000000000000000000000000000281d8712b36b4365bd09fe91de46e78b69d5d4ecf078252eb35b2cbbb24ba057616f8ae0000000000000000000000000000000000000000000000000000000000000d30a"
     )
 
     previous_hash = block_hash
@@ -119,18 +119,18 @@ def test_proof_of_work(merkle_root_with_1_transaction, merkle_root_with_2_transa
     assert header is None
 
     is_new_block, nonce, block_hash, header = blocks.run_proof_of_work(
-        previous_hash, merkle_root_with_2_transactions, timestamp, 22000, 1000
+        previous_hash, merkle_root_with_2_transactions, timestamp, 14000, 1000
     )
 
     assert is_new_block
-    assert nonce == 22025
+    assert nonce == 14558
     assert (
         bytes.hex(block_hash)
-        == "00005b938d4fcaa18d0ccc4792100c5bcea26e0b56faec2334c8ea9d530c527e"
+        == "000075c4d199b464a8a9907f54bf6e20057978db79797867cbbe8d553854b8b4"
     )
     assert (
         bytes.hex(header.encode())
-        == "000000e07d18285944711e785cfa7aa96443ddc9a4dfacce935d3bbc9793181ad6c1dcd5b493c8667c3ce50a62fb660cb545074f8d63bf2424bcff323005130179616f8d380000000000000000000000000000000000000000000000000000000000005609"
+        == "010000750f8d91e53b2f3ed764518c77c4bc50cd53c014bbe4bf5aaf89009b7d25c1dcd5b493c8667c3ce50a62fb660cb545074f8d63bf2424bcff323005130179616f8d3800000000000000000000000000000000000000000000000000000000000038de"
     )
 
 
