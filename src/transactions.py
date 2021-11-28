@@ -8,7 +8,7 @@ Hash = bytes
 
 HASH_SIZE: int = 32
 SIGNATURE_SIZE: int = 72
-TRANSACTION_SIZE: int = 168  # i.e. 32 * 3 + 72
+TRANSACTION_SIZE: int = 168  # i.e. 3 * 32 + 72
 
 REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
 REWARD_SENDER: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
@@ -73,11 +73,11 @@ def init_reward(receiver: Hash) -> Transaction:
 
 def validate_reward(reward: Transaction) -> bool:
     """ """
-    is_valid_hash = reward.reference_hash == REWARD_HASH
+    is_valid_reference = reward.reference_hash == REWARD_HASH
     is_valid_sender = reward.sender == REWARD_SENDER
     is_valid_signature = reward.signature == REWARD_SIGNATURE
 
-    return is_valid_hash and is_valid_sender and is_valid_signature
+    return is_valid_reference and is_valid_sender and is_valid_signature
 
 
 @dataclasses.dataclass

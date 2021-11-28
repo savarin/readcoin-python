@@ -99,7 +99,7 @@ class Wallet:
     private_key: ec.EllipticCurvePrivateKey
 
 
-def get_address(public_key: ec.EllipticCurvePublicKey) -> bytes:
+def init_address(public_key: ec.EllipticCurvePublicKey) -> bytes:
     """ """
     return hashlib.sha256(
         public_key.public_bytes(
@@ -113,7 +113,7 @@ def init_wallet(port: int) -> Wallet:
     """ """
     private_key = ec.generate_private_key(curve=ec.SECP256K1())
     public_key = private_key.public_key()
-    address = get_address(public_key)
+    address = init_address(public_key)
 
     return Wallet(
         address=address, port=port, public_key=public_key, private_key=private_key
@@ -150,7 +150,7 @@ def load_demo_wallets() -> Dict[int, Wallet]:
         name_prefix = str(port) + "-"
         public_key, private_key = load_keys(name_prefix, False)
 
-        address = get_address(public_key)
+        address = init_address(public_key)
         wallet = Wallet(
             address=address, port=port, public_key=public_key, private_key=private_key
         )
