@@ -5,7 +5,7 @@ import hashlib
 import transactions as transacts
 
 
-VERSION: int = 0
+VERSION: int = 2
 
 HEADER_SIZE: int = 101  # i.e. 1 + 32 + 32 + 4 + 32
 
@@ -170,7 +170,7 @@ def init_genesis_block(receiver: transacts.Hash) -> Block:
         previous_hash=previous_hash,
         merkle_root=merkle_root,
         timestamp=1634700000,
-        nonce=82822,
+        nonce=48705,
     )
 
     guess = hashlib.sha256(hashlib.sha256(header.encode()).digest())

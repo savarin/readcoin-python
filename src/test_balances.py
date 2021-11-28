@@ -34,7 +34,7 @@ def transfer(wallets, reward) -> transacts.Transaction:
     sender = wallets[7000].address
     receiver = wallets[8000].address
     signature = bytes.fromhex(
-        "3046022100908f0452a1cec2be556d2c06f38ea6e9c4f00c027eaabb561035e938f8d0bbce0221009b310b8274e29e6032c98ddc960b8406b2a282b1087a6219223af5488b2c0529"
+        "304402205393ece4549b926f429c4173b7d6e8f4da4222d63adc23bbc7ce36321c4e626c02205828f91c27f96de27224affb468338f5eb34cbdc9521690964689fb68a5ea213"
     )
 
     return transacts.Transaction(
@@ -86,7 +86,7 @@ def blockchain_with_2_blocks(
         previous_hash=blockchain.chain[0],
         merkle_root=merkle_root_with_2_transactions,
         timestamp=1634700600,
-        nonce=38997,
+        nonce=11293,
     )
 
     block = blocks.Block(header=header, transactions=[reward, transfer])
@@ -106,7 +106,7 @@ def test_init_balance(
 
     assert (
         bytes.hex(balance.latest_hash)
-        == "0000a0939d2ea8133efef4576aceac9e89b66298ecafce0615d1de4dc06db7c8"
+        == "0000704291eb05b64b2d0fbfa5be0e5d8176bf97c30ee9be08db19846aade9ce"
     )
     assert len(balance.accounts) == 1
 
@@ -122,7 +122,7 @@ def test_init_balance(
 
     assert (
         bytes.hex(balance.latest_hash)
-        == "000069db062f12a370e3614549bfc80f759e000b743b94387fd8d7740873a65e"
+        == "000021277969446ebde2ddaaf35a88cbae02a4eb8e303ab936d28d27d4396ee8"
     )
     assert len(balance.accounts) == 2
 
@@ -135,7 +135,7 @@ def test_init_balance(
     assert len(balance.accounts[wallets[8000].address]) == 1
     assert (
         bytes.hex(balance.accounts[wallets[8000].address][0])
-        == "4f80df918605f2c2a865e440080000833c77740d4e94629712e089136c5bee40"
+        == "dc6927db686e84f6e34f9c94962341872f5b6e80c9ac5c1cd3a1939513757f61"
     )
 
 
@@ -199,8 +199,8 @@ def test_validate_blockchain(
         (0).to_bytes(32, byteorder="big"),
         merkle_root_with_1_transaction,
         1634701200,
-        4800,
-        1000,
+        # 4800,
+        # 1000,
     )
 
     block = blocks.Block(header=header, transactions=[reward])
