@@ -199,8 +199,8 @@ def test_validate_blockchain(
         (0).to_bytes(32, byteorder="big"),
         merkle_root_with_1_transaction,
         1634701200,
-        # 4800,
-        # 1000,
+        25157,
+        1000,
     )
 
     block = blocks.Block(header=header, transactions=[reward])

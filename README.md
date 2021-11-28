@@ -1,12 +1,12 @@
 # readcoin
 
-Minimal implementation of the Bitcoin protocol for educational purposes.
+readcoin is a minimal implementation of the Bitcoin protocol for educational purposes.
 
 ## Context
 
 The latest version implements mining, header validation (block hashes form a chain and satisfy
-proof-of-work) and transaction validation (sender has not been spent token and signature is valid). For
-simplicity, difficulty is set at a constant and each token is indivisible.
+proof-of-work) and transaction validation (sender has not been spent token and signature is valid).
+For simplicity, difficulty is set at a constant and each token is indivisible.
 
 We implement the Bitcoin protocol through multiple iterations:
 
@@ -22,11 +22,13 @@ include balances and full block validation.
 include elliptic curve signature and verification.
 
 The term readcoin refers to a blog by the author on readcoin.com (no longer operational). The first
-article can be found [here](https://gist.github.com/savarin/c71c1e4dfa4edf3b13bf36ccd8f6de17).
+article can be found [here](https://gist.github.com/savarin/c71c1e4dfa4edf3b13bf36ccd8f6de17). A
+blog post series with step-by-step discussion of the implementation is currently in progress; posts
+published so far are [here](https://ezzeriesa.notion.site/A-minimal-Bitcoin-implementation-Fall-2021-9559908f03ad4cb7a09ee60a457198e2).
 
 ## Installation
 
-Running the code requires two imports.
+Running the code requires installation of two packages.
 
 ```shell
 pip install python-dotenv cryptography
