@@ -1,6 +1,6 @@
 # readcoin
 
-readcoin is a minimal implementation of the Bitcoin protocol for educational purposes.
+readcoin is a minimal proof-of-work cryptocurrency based on the Bitcoin protocol.
 
 ## Context
 
