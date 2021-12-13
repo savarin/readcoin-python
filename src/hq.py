@@ -4,7 +4,7 @@ import socket
 
 import dotenv
 
-import helpers
+import node
 
 
 dotenv.load_dotenv()
@@ -27,7 +27,7 @@ class HQ:
 def init_hq(port: int) -> HQ:
     """ """
     assert HQ_IP is not None
-    sock = helpers.bind_socket(HQ_IP, HQ_PORT)
+    sock = node.bind_socket(HQ_IP, HQ_PORT)
 
     return HQ(port=port, sock=sock)
 

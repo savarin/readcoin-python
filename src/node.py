@@ -1,5 +1,4 @@
 import dataclasses
-import hashlib
 import os
 import socket
 import sys
@@ -8,7 +7,6 @@ import time
 import dotenv
 
 import blocks
-import helpers
 
 
 dotenv.load_dotenv()
@@ -17,7 +15,11 @@ NODE_IP = os.getenv("NODE_IP")
 NODE_PORTS = [7000, 8000, 9000]
 
 
-GENESIS_BLOCK = blocks.init_genesis_block()
+def bind_socket(ip_address: str, port: int) -> socket.socket:
+    """ """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip_address, port))
+    return sock
 
 
 @dataclasses.dataclass
@@ -32,14 +34,9 @@ class Node:
 def init_node(port: int) -> Node:
     """ """
     assert NODE_IP is not None
-    sock = helpers.bind_socket(NODE_IP, port)
+    sock = bind_socket(NODE_IP, port)
 
-    block_hash = hashlib.sha256(
-        hashlib.sha256(GENESIS_BLOCK.header.encode()).digest()
-    ).digest()
-    blockchain = blocks.Blockchain(
-        chain=[block_hash], blocks={block_hash: GENESIS_BLOCK}
-    )
+    blockchain = blocks.init_blockchain()
 
     return Node(port=port, sock=sock, blockchain=blockchain)
 
@@ -63,11 +60,11 @@ def run(node: Node):
         try:
             # Listen for incoming messages, with maximum size set at OS X maximum UDP package size
             # of 9216 bytes.
-            node.sock.settimeout(0.1)
+            node.sock.settimeout(1)
             message, _ = node.sock.recvfrom(9216)
 
             # Decode message and check blockchain is valid.
-            blockchain = blocks.decode_message(message)
+            blockchain = blocks.decode_blockchain(message)
 
             if not blocks.replace_blockchain(node.blockchain, blockchain):
                 print("IGNORE blockchain...")

@@ -137,4 +137,4 @@ def test_decode_message():
     blockchain = blocks.Blockchain(chain=[block_hash], blocks={block_hash: block})
     blockchain_bytes = blockchain.encode()
 
-    assert blocks.decode_message(blockchain_bytes).encode() == blockchain_bytes
+    assert blocks.decode_blockchain(blockchain_bytes).encode() == blockchain_bytes

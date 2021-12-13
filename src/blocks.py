@@ -34,6 +34,20 @@ class Header:
         )
 
 
+def decode_header(header_bytes: bytes) -> Header:
+    """ """
+    version = header_bytes[0]
+    previous_hash = header_bytes[1 : 1 + HASH_SIZE]
+    timestamp = int.from_bytes(
+        header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + 4], byteorder="big"
+    )
+    nonce = int.from_bytes(header_bytes[1 + HASH_SIZE + 4 :], byteorder="big")
+
+    return Header(
+        version=version, previous_hash=previous_hash, timestamp=timestamp, nonce=nonce
+    )
+
+
 @dataclasses.dataclass
 class Transaction:
     """ """
@@ -46,6 +60,31 @@ class Transaction:
         return self.sender.to_bytes(2, byteorder="big") + self.receiver.to_bytes(
             2, byteorder="big"
         )
+
+
+def decode_transaction(transaction_bytes: bytes) -> Transaction:
+    """ """
+    sender = int.from_bytes(transaction_bytes[:2], byteorder="big")
+    receiver = int.from_bytes(transaction_bytes[2:], byteorder="big")
+
+    return Transaction(sender=sender, receiver=receiver)
+
+
+def decode_transactions(
+    transaction_counter: int, transactions_bytes: bytes
+) -> List[Transaction]:
+    """ """
+    transactions: List[Transaction] = []
+
+    for i in range(transaction_counter):
+        transaction_bytes = transactions_bytes[
+            i * TRANSACTION_SIZE : (i + 1) * TRANSACTION_SIZE
+        ]
+        transaction = decode_transaction(transaction_bytes)
+
+        transactions.append(transaction)
+
+    return transactions
 
 
 @dataclasses.dataclass
@@ -78,6 +117,20 @@ class Block:
         )
 
 
+def decode_block(block_bytes: bytes) -> Block:
+    """ """
+    header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
+    transaction_counter = int.from_bytes(
+        block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
+    )
+    transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
+
+    header = decode_header(header_bytes)
+    transactions = decode_transactions(transaction_counter, transactions_bytes)
+
+    return Block(header=header, transactions=transactions)
+
+
 @dataclasses.dataclass
 class Blockchain:
     """ """
@@ -95,6 +148,40 @@ class Blockchain:
         return blockchain_bytes
 
 
+def iterate_blockchain(blockchain_bytes: bytes) -> Generator:
+    """ """
+    message_size = len(blockchain_bytes)
+    byte_index = 0
+
+    while True:
+        if byte_index == message_size:
+            yield None, None
+
+        block_size = blockchain_bytes[byte_index]
+        yield block_size, blockchain_bytes[byte_index : byte_index + block_size]
+
+        byte_index += block_size
+
+
+def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
+    """ """
+    chain: List[Hash] = []
+    blocks: Dict[Hash, Block] = {}
+
+    for block_size, block_bytes in iterate_blockchain(blockchain_bytes):
+        if block_size is None:
+            break
+
+        block = decode_block(block_bytes)
+        header = block.header
+        block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
+        chain.append(block_hash)
+        blocks[block_hash] = block
+
+    return Blockchain(chain=chain, blocks=blocks)
+
+
 def init_genesis_block() -> Block:
     """ """
     previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
@@ -108,6 +195,16 @@ def init_genesis_block() -> Block:
     transaction = Transaction(sender=0, receiver=7000)
 
     return Block(header=header, transactions=[transaction])
+
+
+def init_blockchain() -> Blockchain:
+    """ """
+    genesis_block = init_genesis_block()
+
+    header = genesis_block.header
+    genesis_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
+
+    return Blockchain(chain=[genesis_hash], blocks={genesis_hash: genesis_block})
 
 
 def run_proof_of_work(
@@ -168,14 +265,13 @@ def replace_blockchain(
     current_blockchain: Blockchain, potential_blockchain: Blockchain
 ):
     """Compare blockchains and replace if potential blockchain is longer and valid."""
-    if len(potential_blockchain.chain) < len(current_blockchain.chain):
+    current_chain = current_blockchain.chain
+
+    if len(potential_blockchain.chain) < len(current_chain):
         return False
 
     for i, block_hash in enumerate(potential_blockchain.chain):
-        if not (
-            i < len(current_blockchain.chain)
-            and block_hash == current_blockchain.chain[i]
-        ):
+        if i == len(current_chain) or block_hash != current_chain[i]:
             break
 
         common_hash = block_hash
@@ -185,86 +281,3 @@ def replace_blockchain(
     )
 
     return validate_blockchain(remaining_blockchain, common_hash)
-
-
-def decode_header(header_bytes: bytes) -> Header:
-    """ """
-    version = header_bytes[0]
-    previous_hash = header_bytes[1 : 1 + HASH_SIZE]
-    timestamp = int.from_bytes(
-        header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + 4], byteorder="big"
-    )
-    nonce = int.from_bytes(header_bytes[1 + HASH_SIZE + 4 :], byteorder="big")
-
-    return Header(
-        version=version, previous_hash=previous_hash, timestamp=timestamp, nonce=nonce
-    )
-
-
-def decode_transaction(transaction_bytes: bytes) -> Transaction:
-    """ """
-    sender = int.from_bytes(transaction_bytes[:2], byteorder="big")
-    receiver = int.from_bytes(transaction_bytes[2:], byteorder="big")
-
-    return Transaction(sender=sender, receiver=receiver)
-
-
-def decode_transactions(
-    transaction_counter: int, transactions_bytes: bytes
-) -> List[Transaction]:
-    """ """
-    transactions: List[Transaction] = []
-
-    for i in range(transaction_counter):
-        transaction_bytes = transactions_bytes[
-            i * TRANSACTION_SIZE : (i + 1) * TRANSACTION_SIZE
-        ]
-        transaction = decode_transaction(transaction_bytes)
-
-        transactions.append(transaction)
-
-    return transactions
-
-
-def iterate_message(message: bytes) -> Generator:
-    """ """
-    message_size = len(message)
-    byte_index = 0
-
-    while True:
-        if byte_index == message_size:
-            yield None, None
-
-        block_size = message[byte_index]
-        yield block_size, message[byte_index : byte_index + block_size]
-
-        byte_index += block_size
-
-
-def decode_message(message: bytes) -> Blockchain:
-    """ """
-    chain: List[Hash] = []
-    blocks: Dict[Hash, Block] = {}
-
-    for block_size, block_bytes in iterate_message(message):
-        if block_size is None:
-            break
-
-        header_bytes = block_bytes[1 : 1 + HEADER_SIZE]
-        transaction_counter = int.from_bytes(
-            block_bytes[1 + HEADER_SIZE : 1 + HEADER_SIZE + 1], byteorder="big"
-        )
-        transactions_bytes = block_bytes[1 + HEADER_SIZE + 1 :]
-
-        header = decode_header(header_bytes)
-
-        # TODO: Check transactions divisible by transaction size and equal to transaction counter
-        transactions = decode_transactions(transaction_counter, transactions_bytes)
-
-        block = Block(header=header, transactions=transactions)
-        block_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
-
-        chain.append(block_hash)
-        blocks[block_hash] = block
-
-    return Blockchain(chain=chain, blocks=blocks)
