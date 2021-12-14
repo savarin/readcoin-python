@@ -5,15 +5,11 @@ import hashlib
 import transactions as transacts
 
 
-Hash = bytes
-
-
 VERSION: int = 1
 
-HASH_SIZE: int = 32
 HEADER_SIZE: int = 101
 
-REWARD_HASH: bytes = (0).to_bytes(HASH_SIZE, byteorder="big")
+REWARD_HASH: bytes = (0).to_bytes(transacts.HASH_SIZE, byteorder="big")
 REWARD_SENDER: int = 0
 
 
@@ -22,8 +18,8 @@ class Header:
     """ """
 
     version: int
-    previous_hash: Hash
-    merkle_root: Hash
+    previous_hash: transacts.Hash
+    merkle_root: transacts.Hash
     timestamp: int
     nonce: int
 
@@ -41,14 +37,14 @@ class Header:
 def decode_header(header_bytes: bytes) -> Header:
     """ """
     version = header_bytes[0]
-    previous_hash = header_bytes[1 : 1 + HASH_SIZE]
-    merkle_root = header_bytes[1 + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE]
+    previous_hash = header_bytes[1 : 1 + transacts.HASH_SIZE]
+    merkle_root = header_bytes[1 + transacts.HASH_SIZE : 1 + 2 * transacts.HASH_SIZE]
     timestamp = int.from_bytes(
-        header_bytes[1 + HASH_SIZE + HASH_SIZE : 1 + HASH_SIZE + HASH_SIZE + 4],
+        header_bytes[1 + 2 * transacts.HASH_SIZE : 1 + 2 * transacts.HASH_SIZE + 4],
         byteorder="big",
     )
     nonce = int.from_bytes(
-        header_bytes[1 + HASH_SIZE + HASH_SIZE + 4 :], byteorder="big"
+        header_bytes[1 + 2 * transacts.HASH_SIZE + 4 :], byteorder="big"
     )
 
     return Header(
@@ -110,8 +106,8 @@ def decode_block(block_bytes: bytes) -> Block:
 class Blockchain:
     """ """
 
-    chain: List[Hash]
-    blocks: Dict[Hash, Block]
+    chain: List[transacts.Hash]
+    blocks: Dict[transacts.Hash, Block]
 
     def encode(self):
         """ """
@@ -140,8 +136,8 @@ def iterate_blockchain(blockchain_bytes: bytes) -> Generator:
 
 def decode_blockchain(blockchain_bytes: bytes) -> Blockchain:
     """ """
-    chain: List[Hash] = []
-    blocks: Dict[Hash, Block] = {}
+    chain: List[transacts.Hash] = []
+    blocks: Dict[transacts.Hash, Block] = {}
 
     for block_size, block_bytes in iterate_blockchain(blockchain_bytes):
         if block_size is None:
@@ -166,7 +162,7 @@ def init_genesis_block() -> Block:
     assert merkle_tree is not None
     merkle_root = merkle_tree.tree_hash
 
-    previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
+    previous_hash = (0).to_bytes(transacts.HASH_SIZE, byteorder="big")
     header = Header(
         version=VERSION,
         previous_hash=previous_hash,
@@ -192,12 +188,12 @@ def init_blockchain() -> Blockchain:
 
 
 def run_proof_of_work(
-    previous_hash: Hash,
-    merkle_root: Hash,
+    previous_hash: transacts.Hash,
+    merkle_root: transacts.Hash,
     timestamp: int,
     nonce: int = 0,
     iterations: Optional[int] = None,
-) -> Tuple[bool, int, Optional[Hash], Optional[Header]]:
+) -> Tuple[bool, int, Optional[transacts.Hash], Optional[Header]]:
     """Find nonce that makes the first 4 bytes of twice-hashed header all zeroes. Maximum number of
     iterations can be specified."""
     iteration_counter = 0
@@ -225,11 +221,11 @@ def run_proof_of_work(
 
 
 def validate_blockchain(
-    blockchain: Blockchain, previous_hash: Optional[Hash] = None
+    blockchain: Blockchain, previous_hash: Optional[transacts.Hash] = None
 ) -> bool:
     """Check that all headers in the blockchain satisfy proof-of-work and indeed form a chain."""
     if previous_hash is None:
-        previous_hash = (0).to_bytes(HASH_SIZE, byteorder="big")
+        previous_hash = (0).to_bytes(transacts.HASH_SIZE, byteorder="big")
 
     for block_hash in blockchain.chain:
         header = blockchain.blocks[block_hash].header

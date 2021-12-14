@@ -8,7 +8,6 @@ import time
 import dotenv
 
 import blocks
-import helpers
 import transactions as transacts
 
 
@@ -40,7 +39,7 @@ class Node:
 def init_node(port: int) -> Node:
     """ """
     assert NODE_IP is not None
-    sock = helpers.bind_socket(NODE_IP, port)
+    sock = bind_socket(NODE_IP, port)
 
     blockchain = blocks.init_blockchain()
 
