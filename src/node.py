@@ -21,6 +21,13 @@ NODE_PORTS = [7000, 8000, 9000]
 GENESIS_BLOCK = blocks.init_genesis_block()
 
 
+def bind_socket(ip_address: str, port: int) -> socket.socket:
+    """ """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip_address, port))
+    return sock
+
+
 @dataclasses.dataclass
 class Node:
     """ """
@@ -35,12 +42,7 @@ def init_node(port: int) -> Node:
     assert NODE_IP is not None
     sock = helpers.bind_socket(NODE_IP, port)
 
-    block_hash = hashlib.sha256(
-        hashlib.sha256(GENESIS_BLOCK.header.encode()).digest()
-    ).digest()
-    blockchain = blocks.Blockchain(
-        chain=[block_hash], blocks={block_hash: GENESIS_BLOCK}
-    )
+    blockchain = blocks.init_blockchain()
 
     return Node(port=port, sock=sock, blockchain=blockchain)
 

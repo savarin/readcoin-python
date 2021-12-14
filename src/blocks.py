@@ -253,7 +253,7 @@ def replace_blockchain(
     """Compare blockchains and replace if potential blockchain is longer and valid."""
     current_chain = current_blockchain.chain
 
-    if len(potential_blockchain.chain) < len(current_blockchain.chain):
+    if len(potential_blockchain.chain) <= len(current_blockchain.chain):
         return False
 
     for i, block_hash in enumerate(potential_blockchain.chain):
