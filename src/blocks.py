@@ -181,9 +181,9 @@ def init_genesis_block() -> Block:
 def init_blockchain() -> Blockchain:
     """ """
     genesis_block = init_genesis_block()
-    genesis_hash = hashlib.sha256(
-        hashlib.sha256(genesis_block.header.encode()).digest()
-    ).digest()
+
+    header = genesis_block.header
+    genesis_hash = hashlib.sha256(hashlib.sha256(header.encode()).digest()).digest()
 
     return Blockchain(chain=[genesis_hash], blocks={genesis_hash: genesis_block})
 
