@@ -68,7 +68,7 @@ def run(node: Node):
             message, _ = node.sock.recvfrom(9216)
 
             # Decode message and check blockchain is valid.
-            blockchain = blocks.decode_message(message)
+            blockchain = blocks.decode_blockchain(message)
 
             if not blocks.replace_blockchain(node.blockchain, blockchain):
                 print("IGNORE blockchain...")
