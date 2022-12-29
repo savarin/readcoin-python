@@ -1,4 +1,6 @@
-# readcoin
+# readcoin-python
+
+*For the version in Rust, please visit [readcoin](https://github.com/savarin/readcoin).*
 
 readcoin is a minimal proof-of-work cryptocurrency based on the Bitcoin protocol.
 
